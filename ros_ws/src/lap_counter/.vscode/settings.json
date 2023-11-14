@@ -1,0 +1,20 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/david/iqs/ros_ws/install/uwb_sim/lib/python3.10/site-packages",
+        "/home/david/iqs/ros_ws/install/management_console/lib/python3.10/site-packages",
+        "/home/david/iqs/ros_ws/install/lap_counter/lib/python3.10/site-packages",
+        "/home/david/iqs/ros_ws/install/durability_overlay/lib/python3.10/site-packages",
+        "/home/david/iqs/ros_ws/install/durability_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/david/iqs/ros_ws/install/uwb_sim/lib/python3.10/site-packages",
+        "/home/david/iqs/ros_ws/install/management_console/lib/python3.10/site-packages",
+        "/home/david/iqs/ros_ws/install/lap_counter/lib/python3.10/site-packages",
+        "/home/david/iqs/ros_ws/install/durability_overlay/lib/python3.10/site-packages",
+        "/home/david/iqs/ros_ws/install/durability_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ]
+}
