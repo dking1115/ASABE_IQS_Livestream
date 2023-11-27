@@ -22,11 +22,11 @@ private:
         float time = (now().seconds() - start_time.seconds()) + ((now().nanoseconds() - start_time.nanoseconds()) / 1000000000.0);
 
         // Generate circular motion for x and y
-        float radius = 10.0;  // Adjust the radius as needed
+        float radius = 5.0;  // Adjust the radius as needed
         float angular_speed = 2.0 * M_PI / 60.0;  // One revolution per second
 
-        float x = radius * cos(angular_speed * time);
-        float y = radius * sin(angular_speed * time);
+        float x = 5.0+ radius * cos(angular_speed * time);
+        float y = 5.0+ radius * sin(angular_speed * time);
 
         auto message = durability_msgs::msg::LoadToad();
         message.force = 100;

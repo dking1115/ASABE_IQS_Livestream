@@ -13,7 +13,7 @@ class UWBPositionPublisher(Node):
         self.publisher = self.create_publisher(PoseStamped, 'UWB_position', 10)
 
     def goal_pose_callback(self, msg):
-        self.get_logger().info('Received Goal Pose:\n{}'.format(msg))
+        self.get_logger().info('Received Goal Pose')
         # Modify the pose if needed
         # For example, you might want to republish the same pose
         self.publisher.publish(msg)

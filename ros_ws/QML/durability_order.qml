@@ -94,4 +94,24 @@ Rectangle {
         
     }
     }
+    Rectangle{
+            color: "#777777"
+            x:1*parent.width/3
+            y:18*parent.height /20
+            height: parent.height/10
+            width: parent.width/3
+            radius:5
+            Text{
+                text:"Run"
+                font.pointSize: 13
+                anchors.centerIn: parent
+            }
+    Button {
+        onClicked: dataModel.set_current_durability_run(list.model[list.currentIndex].id)
+        width:parent.width
+        height:parent.height
+        opacity:0
+        
+    }
+    }
 }

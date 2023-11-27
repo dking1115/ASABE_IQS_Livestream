@@ -19,6 +19,12 @@ ApplicationWindow {
         
     }
     Loader{
+        x: 3*parent.width/4
+        width:parent.width/4
+        height:parent.height/2
+        source: "app_selector.qml"
+    }
+    Loader{
             width:parent.width/4
             height: parent.height/2
             x:0
@@ -26,8 +32,10 @@ ApplicationWindow {
             source: "durability_info.qml"
         }
     Loader{
+        active: dataModel.screen_index_qt == 2
         width:parent.width
         height:parent.height
         source: "track_setup.qml"
     }
+    
 }

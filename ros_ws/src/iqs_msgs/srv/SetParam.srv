@@ -1,5 +1,5 @@
 int8 param_num
-Float value
+geometry_msgs/Point point
 
 ---
 bool success
