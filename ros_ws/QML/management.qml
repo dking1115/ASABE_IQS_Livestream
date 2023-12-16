@@ -37,6 +37,7 @@ ApplicationWindow {
         height:parent.height
         source: "track_setup.qml"
     }
+<<<<<<< HEAD
      Image {
         width: parent.width
         height: parent.height
@@ -44,4 +45,11 @@ ApplicationWindow {
         asynchronous: true
     }
     
+=======
+    Button{
+        x:parent.width/2
+        y:parent.height/2
+        onClicked:exit_app()
+    }
+>>>>>>> bf7f81bca5bdb3766dab6cd8d2b154728de83ffb
 }

@@ -108,7 +108,11 @@ class DataModel(QObject):
         self.durability_current_run=id
         self.update_dur_order()
         self.update_dur_info()
-
+    
+    @pyqtSlot()
+    def exit_app(self):
+        sys.exit(-1)
+        
     def get_track(self):
         db,cursor=cursor_connection()
         sql = "SELECT id, x, y FROM durability_track"
