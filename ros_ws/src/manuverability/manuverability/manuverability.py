@@ -7,6 +7,10 @@ import cv2
 import numpy as np
 import math
 import mysql.connector
+import os
+
+os.environ['DISPLAY'] = ':0.0'
+
 
 def average_color_around_point(image, center, radius):
     # Convert the image to the LAB color space

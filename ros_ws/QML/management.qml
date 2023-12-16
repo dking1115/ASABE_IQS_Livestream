@@ -37,5 +37,11 @@ ApplicationWindow {
         height:parent.height
         source: "track_setup.qml"
     }
+     Image {
+        width: parent.width
+        height: parent.height
+        source: "man_pic.png"
+        asynchronous: true
+    }
     
 }

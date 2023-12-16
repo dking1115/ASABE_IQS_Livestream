@@ -2,13 +2,17 @@ import sys
 from PyQt5.QtCore import QObject, QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QVariant, Qt
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQml import QQmlApplicationEngine
+from PyQt5.QtGui import QPixmap, QImage
 import mysql.connector
 import rclpy
 from threading import *
 from geometry_msgs.msg import PoseStamped
 from iqs_msgs.srv import SetParam, GetTrack
+from sensor_msgs.msg import Image
 import numpy as np
-
+import os
+import cv2 as cv
+from cv_bridge import CvBridge
 def cursor_connection():
     mydb = mysql.connector.connect(
     host="localhost",
@@ -29,6 +33,7 @@ class DataModel(QObject):
     track_changed=pyqtSignal()
     screen_index_changed=pyqtSignal()
     durability_info_changed=pyqtSignal()
+    man_pic_changed=pyqtSignal()
     def __init__(self):
         super().__init__()
         #self.sled_sub=node.create_subscription(Sled,'sled',self.sled_callback,10)
@@ -54,13 +59,15 @@ class DataModel(QObject):
         #self.uwb_position=PoseStamped()
         self.uwb_pos_obj={"x":0.0,"y":0.0}
         self.uwb_sub=node.create_subscription(PoseStamped,"UWB_position",self.uwb_callback,10)
+        self.man_img_sub=node.create_subscription(Image,"manuverability_top_down",self.img_callback,10)
         self.track_extent_obj={"x_min":-10,"x_max":10,"y_min":-10,"y_max":10}
         self.track=[]*19
         self.get_track()
         self.thread()
         self.generate_pull_order(1)
-        
+        self.man_img_obj=QImage()
         self.screen_index=1
+        self.bridge = CvBridge()
 
     
     @pyqtSlot(int)
@@ -133,8 +140,6 @@ class DataModel(QObject):
         print(self.track_extent_obj)
         self.track_extent_changed.emit()
 
-
-
     @pyqtProperty(QVariant, notify=dur_order_changed)
     def dur_order(self):
         return self.durrability_order
@@ -162,6 +167,11 @@ class DataModel(QObject):
     @pyqtProperty(QVariant,notify=durability_info_changed)
     def durability_info_arr_qt(self):
         return self.durability_info_arr
+    
+    @pyqtProperty(QImage,notify=man_pic_changed)
+    def man_pic(self):
+        return self.man_img_obj
+
 
     def get_teams(self):
         db,cursor=cursor_connection()
@@ -172,6 +182,12 @@ class DataModel(QObject):
             id,name,number,color,abv=x
             team={"team_name":name,"number":number,"color":color,"abv":abv}
             self.teams[id]=team
+
+    def img_callback(self,msg):
+        cv_img=self.bridge.imgmsg_to_cv2(msg,desired_encoding='bgr8')
+        cv.imwrite("man_pic.png",cv_img)
+        #self.man_img_obj=QImage.fromData(msg.data.tobytes())
+        #print("img")
 
     def update_dur_info(self):
         db,cursor=cursor_connection()
@@ -260,8 +276,13 @@ def main():
 
     # Expose the DataModel instance to QML
     engine.rootContext().setContextProperty("dataModel", data_model)
-
-    engine.load(QUrl("QML/management.qml"))
+    print("done")
+    #engine.load("file://~/iqs/ros_ws/QML/management.qml")
+    #engine.load("QML/management.qml")
+    path=QUrl.fromLocalFile("file:///home/david/iqs/ros_ws/QML/management.qml").path()
+    print(path)
+    engine.load(path)
+    print("done")
 
     if not engine.rootObjects():
         sys.exit(-1)
