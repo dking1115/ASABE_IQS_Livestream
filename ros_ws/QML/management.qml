@@ -37,5 +37,9 @@ ApplicationWindow {
         height:parent.height
         source: "track_setup.qml"
     }
-    
+    Button{
+        x:parent.width/2
+        y:parent.height/2
+        onClicked:exit_app()
+    }
 }
