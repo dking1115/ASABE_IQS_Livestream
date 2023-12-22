@@ -6,7 +6,7 @@ ApplicationWindow {
     width: 1920
     height: 1080
     title: "Management Console"
-
+    //visibility: "FullScreen"
     Rectangle{
         color:"#333333"
         height:parent.height/2
@@ -37,19 +37,4 @@ ApplicationWindow {
         height:parent.height
         source: "track_setup.qml"
     }
-<<<<<<< HEAD
-     Image {
-        width: parent.width
-        height: parent.height
-        source: "man_pic.png"
-        asynchronous: true
-    }
-    
-=======
-    Button{
-        x:parent.width/2
-        y:parent.height/2
-        onClicked:exit_app()
-    }
->>>>>>> bf7f81bca5bdb3766dab6cd8d2b154728de83ffb
 }

@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtCore import QObject, QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QVariant, Qt
+from PyQt5.QtCore import QObject, QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QVariant, Qt,QCoreApplication
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQml import QQmlApplicationEngine
 from PyQt5.QtGui import QPixmap, QImage
@@ -9,11 +9,15 @@ from threading import *
 from geometry_msgs.msg import PoseStamped
 from iqs_msgs.srv import SetParam, GetTrack
 from sensor_msgs.msg import Image
+from nav_msgs.msg import Odometry
 import numpy as np
 import os
 import cv2 as cv
 from cv_bridge import CvBridge
-def cursor_connection():
+from sql_package.connection import cursor_connection
+
+
+"""def cursor_connection():
     mydb = mysql.connector.connect(
     host="localhost",
     user="root",
@@ -22,6 +26,7 @@ def cursor_connection():
     )
     cursor=mydb.cursor()
     return mydb, cursor
+"""
 
 rclpy.init()
 node=rclpy.create_node('Management')
@@ -34,6 +39,7 @@ class DataModel(QObject):
     screen_index_changed=pyqtSignal()
     durability_info_changed=pyqtSignal()
     man_pic_changed=pyqtSignal()
+    load_toad_position_changed=pyqtSignal()
     def __init__(self):
         super().__init__()
         #self.sled_sub=node.create_subscription(Sled,'sled',self.sled_callback,10)
@@ -55,11 +61,13 @@ class DataModel(QObject):
         self.update_dur_info()
         self.durability_track_state=1 #1:running 2: stopped 3: reseting
         
-        
+        self.load_toad_pos={"x":0.0,"y":0.0}
+
         #self.uwb_position=PoseStamped()
         self.uwb_pos_obj={"x":0.0,"y":0.0}
         self.uwb_sub=node.create_subscription(PoseStamped,"UWB_position",self.uwb_callback,10)
         self.man_img_sub=node.create_subscription(Image,"manuverability_top_down",self.img_callback,10)
+        self.dur_odom_sub=node.create_subscription(Odometry, "load_toad_odom",self.load_toad_odom_callback,10)
         self.track_extent_obj={"x_min":-10,"x_max":10,"y_min":-10,"y_max":10}
         self.track=[]*19
         self.get_track()
@@ -85,6 +93,8 @@ class DataModel(QObject):
         self.screen_index=id
         node.get_logger().info(f"Changing to screen {id}")
         self.screen_index_changed.emit()
+        if id==6:
+            self.exit_app()
 
     @pyqtSlot()
     def update_track(self):
@@ -111,6 +121,7 @@ class DataModel(QObject):
     
     @pyqtSlot()
     def exit_app(self):
+        QCoreApplication.quit()
         sys.exit(-1)
         
     def get_track(self):
@@ -156,6 +167,10 @@ class DataModel(QObject):
     def track_extent(self):
         return self.track_extent_obj
 
+    @pyqtProperty(QVariant, notify=load_toad_position_changed)
+    def load_toad_pos_qt(self):
+        return self.load_toad_pos
+
     @pyqtProperty(QVariant,notify=track_changed)
     def track_qt(self):
         return self.track
@@ -192,6 +207,11 @@ class DataModel(QObject):
         cv.imwrite("man_pic.png",cv_img)
         #self.man_img_obj=QImage.fromData(msg.data.tobytes())
         #print("img")
+
+    def load_toad_odom_callback(self,msg):
+        self.load_toad_pos["x"]=msg.pose.pose.position.x
+        self.load_toad_pos["y"]=msg.pose.pose.position.y
+        self.load_toad_position_changed.emit()
 
     def update_dur_info(self):
         db,cursor=cursor_connection()
@@ -286,6 +306,7 @@ def main():
     path=QUrl.fromLocalFile("file:///home/david/iqs/ros_ws/QML/management.qml").path()
     print(path)
     engine.load(path)
+    
     print("done")
 
     if not engine.rootObjects():

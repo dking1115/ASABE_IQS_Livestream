@@ -1,0 +1,8 @@
+setup.py
+my_sql_package.egg-info/PKG-INFO
+my_sql_package.egg-info/SOURCES.txt
+my_sql_package.egg-info/dependency_links.txt
+my_sql_package.egg-info/requires.txt
+my_sql_package.egg-info/top_level.txt
+sql_package/__init__.py
+sql_package/connection.py

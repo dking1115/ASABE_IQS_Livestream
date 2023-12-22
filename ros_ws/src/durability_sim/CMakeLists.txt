@@ -11,12 +11,13 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(durability_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(nav_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
 add_executable(durability_sim src/durability_sim.cpp)
-ament_target_dependencies(durability_sim rclcpp std_msgs durability_msgs tf2_ros)
+ament_target_dependencies(durability_sim rclcpp std_msgs durability_msgs tf2_ros nav_msgs)
 target_include_directories(durability_sim PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)

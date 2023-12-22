@@ -11,6 +11,7 @@ Rectangle{
             ListElement{ name: "Pulls"; index: 3}
             ListElement{ name: "Manuverability Setup"; index: 4}
             ListElement{ name: "Camera Settings"; index: 5}
+            ListElement{ name: "Exit"; index: 6}
 
         }
     ListView{

@@ -199,5 +199,13 @@ Rectangle{
         y: meters_to_pixels_y(dataModel.uwb_position.y)-height/2
     }
 
+    Rectangle{
+        color:"#00FF00"
+        width:parent.width/100
+        height:parent.width/100
+        x: meters_to_pixels_x(dataModel.load_toad_pos_qt.x)-width/2
+        y: meters_to_pixels_y(dataModel.load_toad_pos_qt.y)-height/2
+    }
+
 
 }
