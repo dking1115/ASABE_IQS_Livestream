@@ -5,7 +5,7 @@ import re
 import socket
 
 class camera():
-    def __init__(self,com_port,ip_addr):
+    def __init__(self,com_port,ip_addr,port):
         if com_port:
             self.cam_ser=serial.Serial(com_port,38400,8,"N",1,.01)
             self.type=0
@@ -14,7 +14,7 @@ class camera():
         self.pan_position=0
         self.responses=[]
         if ip_addr:
-            self.setup_socket(ip_addr)
+            self.setup_socket(ip_addr,port)
             self.type=1
         
     
@@ -98,7 +98,7 @@ class camera():
         result=self.send_cmd(command)
         #print(result)
     
-    def abs_pos(self,pan_speed,tilt_speed,pan_pos,tilt_pos):
+    def abs_pos(self,pan_speed,pan_pos,tilt_pos):
         tilt_pos=tilt_pos*-1
         pan_pos_cmd=self.twos_comp(int(pan_pos*40103/170),20)
         tilt_pos_cmd=self.twos_comp(int(tilt_pos*21231/90),16)

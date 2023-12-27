@@ -3,6 +3,7 @@ from PyQt5.QtCore import QObject, QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QVar
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQml import QQmlApplicationEngine
 from PyQt5.QtGui import QPixmap, QImage
+from std_msgs.msg import Bool, Int8
 import mysql.connector
 import rclpy
 from threading import *
@@ -16,18 +17,6 @@ import cv2 as cv
 from cv_bridge import CvBridge
 from sql_package.connection import cursor_connection
 
-
-"""def cursor_connection():
-    mydb = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="darkcyde15",
-    database="IQS_2024"
-    )
-    cursor=mydb.cursor()
-    return mydb, cursor
-"""
-
 rclpy.init()
 node=rclpy.create_node('Management')
 
@@ -40,6 +29,11 @@ class DataModel(QObject):
     durability_info_changed=pyqtSignal()
     man_pic_changed=pyqtSignal()
     load_toad_position_changed=pyqtSignal()
+    camera_setting_obj_changed=pyqtSignal()
+    tag_list_updated=pyqtSignal()
+    pull_state_changed=pyqtSignal()
+    man_state_changed=pyqtSignal()
+    dur_state_changed=pyqtSignal()
     def __init__(self):
         super().__init__()
         #self.sled_sub=node.create_subscription(Sled,'sled',self.sled_callback,10)
@@ -68,14 +62,27 @@ class DataModel(QObject):
         self.uwb_sub=node.create_subscription(PoseStamped,"UWB_position",self.uwb_callback,10)
         self.man_img_sub=node.create_subscription(Image,"manuverability_top_down",self.img_callback,10)
         self.dur_odom_sub=node.create_subscription(Odometry, "load_toad_odom",self.load_toad_odom_callback,10)
+        self.camera_seting_update_pub=node.create_publisher(Bool,"camera_settings_updated",10)
+        self.pull_state_pub=node.create_publisher(Int8,"pull_state",10)
+        self.man_state_pub=node.create_publisher(Int8,"man_state",10)
+        self.dur_state_pub=node.create_publisher(Int8,"dur_state",10)
+        self.pull_state_sub=node.create_subscription(Int8,"pull_state",self.pull_state_callback,10)
+        self.man_state_sub=node.create_subscription(Int8,"man_state",self.man_state_callback,10)
+        self.dur_state_sub=node.create_subscription(Int8,"dur_state",self.dur_state_callback,10)
         self.track_extent_obj={"x_min":-10,"x_max":10,"y_min":-10,"y_max":10}
         self.track=[]*19
         self.get_track()
         self.thread()
         self.generate_pull_order(1)
+        self.pull_state=0
+        self.dur_state=0
+        self.man_state=0
         self.man_img_obj=QImage()
         self.screen_index=1
         self.bridge = CvBridge()
+        self.camera_setting_obj={}
+        self.update_camera_settings()
+        self.update_tag_list()
 
     
     @pyqtSlot(int)
@@ -87,6 +94,25 @@ class DataModel(QObject):
         cursor.execute(f"UPDATE Durability_Runs SET order_col = {result[0]+1} WHERE (id = {id})")
         db.commit()
         self.update_dur_order()
+    
+    @pyqtSlot(int)
+    def set_pull_state(self,state):
+        msg=Int8()
+        msg.data=state
+        self.pull_state_pub.publish(msg)
+    
+    @pyqtSlot(int)
+    def set_man_state(self,state):
+        msg=Int8()
+        msg.data=state
+        self.man_state_pub.publish(msg)
+
+    @pyqtSlot(int)
+    def set_dur_state(self,state):
+        msg=Int8()
+        msg.data=state
+        self.dur_state_pub.publish(msg)
+    
     
     @pyqtSlot(int)
     def change_screen(self,id):
@@ -123,7 +149,76 @@ class DataModel(QObject):
     def exit_app(self):
         QCoreApplication.quit()
         sys.exit(-1)
+    
+    @pyqtSlot(int,int,int,int,int,int)
+    def set_camera_trackstate_setting(self,local_camera,state,mode,preset,joystick,tag):
+        db,cursor=cursor_connection()
+        sql=f"UPDATE camera_trackstates SET mode = {mode}, preset = {preset}, tag = {tag}, joystick = {joystick} WHERE camera_id = {local_camera} AND track_state_id = {state}"
+        print(sql)
+        cursor.execute(sql)
+        db.commit()
+        db.close()
+        self.camera_changed()
+    
+    @pyqtSlot(int)
+    def add_camera_trackstate_setting(self,local_camera):
+        db,cursor=cursor_connection()
+        sql=f"SELECT MAX(track_state_id) FROM camera_trackstates WHERE camera_id = {local_camera}"
+        cursor.execute(sql)
+        result=cursor.fetchone()
+        if result[0]:
+            id=result[0]+1
+        else:
+            id=1
+        sql=f"INSERT INTO camera_trackstates (camera_id, track_state_id) VALUES ({local_camera} , {id})"
+        cursor.execute(sql)
+        db.commit()
+        db.close()
+        self.update_camera_settings()
+
+
+    @pyqtProperty(QVariant,notify=tag_list_updated)
+    def tag_list_qt(self):
         
+        return self.tag_list
+
+    @pyqtProperty(int,notify=pull_state_changed)
+    def pull_state_qt(self):
+        return self.pull_state
+
+    @pyqtProperty(int,notify=man_state_changed)
+    def man_state_qt(self):
+        return self.man_state
+    
+    @pyqtProperty(int,notify=dur_state_changed)
+    def dur_state_qt(self):
+        return self.dur_state
+
+
+    @pyqtSlot(int,int,int,int,int)
+    def set_camera_setting(self,local_camera,mode,preset,joystick,tag):
+        db,cursor=cursor_connection()
+        sql=f"UPDATE camera_settings SET mode = {mode}, preset = {preset}, tag = {tag}, joystick = {joystick} WHERE camera_id = {local_camera}"
+        print(sql)
+        cursor.execute(sql)
+        db.commit()
+        db.close()
+        self.camera_changed()
+
+    def pull_state_callback(self,msg):
+        self.pull_state=msg.data
+        self.pull_state_changed.emit()
+    
+    def man_state_callback(self,msg):
+        self.man_state=msg.data
+        self.man_state_changed.emit()
+    
+    def dur_state_callback(self,msg):
+        self.dur_state=msg.data
+        self.dur_state_changed.emit()
+    
+
+
     def get_track(self):
         db,cursor=cursor_connection()
         sql = "SELECT id, x, y FROM durability_track"
@@ -191,6 +286,15 @@ class DataModel(QObject):
     def man_pic(self):
         return self.man_img_obj
 
+    @pyqtProperty(QVariant,notify=camera_setting_obj_changed)
+    def camera_setting_obj_qt(self):
+        return self.camera_setting_obj
+
+    def camera_changed(self):
+        msg=Bool()
+        msg.data=True
+        self.camera_seting_update_pub.publish(msg)
+        self.update_camera_settings()
 
     def get_teams(self):
         db,cursor=cursor_connection()
@@ -249,9 +353,6 @@ class DataModel(QObject):
             cursor.execute(sql,vals)
         db.commit()
         db.close()
-        
-
-
 
     def update_dur_order(self):
         db,cursor=cursor_connection()
@@ -288,6 +389,39 @@ class DataModel(QObject):
         self.uwb_pos_obj["x"]=msg.pose.position.x
         self.uwb_pos_obj["y"]=msg.pose.position.y
         self.uwb_position_changed.emit()
+
+    def update_camera_settings(self):
+        self.camera_setting_obj=[]
+        db,cursor=cursor_connection()
+        sql="SELECT camera_id, ip, com_port, port, x,y,z,yaw,mode,preset,joystick,tag FROM camera_settings"
+        cursor.execute(sql)
+        results=cursor.fetchall()
+        for i in results:
+            id,ip,com_port,port,x,y,z,yaw,cam_mode,cam_preset,cam_joystick,cam_tag=i
+            sql=f"SELECT data_id, track_state_id, mode, joystick, tag, preset FROM camera_trackstates WHERE camera_id={id}"
+            cursor.execute(sql)
+            local_results=cursor.fetchall()
+            states=[]
+            for q in local_results:
+                data_id,track_state,mode,joystick,tag,preset=q
+                state={"track_state":track_state,"mode":mode,"joystick":joystick,"tag":tag,"preset":preset}
+                states.append(state)
+            cam={"id":id,"ip":ip,"com_port":com_port,"port":port,"x":x,"y":y,"z":z,"yaw":yaw,"mode":cam_mode,"preset":cam_preset,"joystick":cam_joystick,"tag":cam_tag,"states":states}
+            self.camera_setting_obj.append(cam)
+        #print(self.camera_setting_obj)
+        self.camera_setting_obj_changed.emit()
+        
+
+    def update_tag_list(self):
+        tags=[1,2,3,4,5,6]
+        self.tag_list=[]
+        for i in tags:
+            tag={"text":f"tag {i}","id":i}
+            #self.tag_list.append(tag)
+        self.tag_list=tags
+        print(self.tag_list)
+        self.tag_list_updated.emit()
+
 
         
 
