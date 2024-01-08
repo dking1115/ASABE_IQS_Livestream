@@ -17,6 +17,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GetTrack.srv"
   "srv/SetParam.srv"
   "srv/ScanManuverability.srv"
+  "msg/Sled.msg"
   DEPENDENCIES
   geometry_msgs
  )

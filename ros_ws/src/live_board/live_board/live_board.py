@@ -9,14 +9,10 @@ def main():
     
     engine = QQmlApplicationEngine()
     
-    data_model = DataModel("Management_console",management=True)
-
-    # Expose the DataModel instance to QML
+    data_model = DataModel("Live_board")
     engine.rootContext().setContextProperty("dataModel", data_model)
     print("done")
-    #engine.load("file://~/iqs/ros_ws/QML/management.qml")
-    #engine.load("QML/management.qml")
-    path=QUrl.fromLocalFile("file:///home/david/iqs/ros_ws/QML/management.qml").path()
+    path=QUrl.fromLocalFile("file:///home/david/iqs/ros_ws/QML/live_board.qml").path()
     print(path)
     engine.load(path)
     
