@@ -3,7 +3,7 @@ import sys
 import time
 import re
 import socket
-
+import threading
 class camera():
     def __init__(self,com_port,ip_addr,port):
         if com_port:
@@ -13,28 +13,55 @@ class camera():
         self.camera_ip=ip_addr
         self.pan_position=0
         self.responses=[]
+        self.control_mode=1
+        self.pan=0
+        self.tilt=0
         if ip_addr:
             self.setup_socket(ip_addr,port)
             self.type=1
+            listener=threading.Thread(target=self.ip_listening_thread)
+            listener.start()
+        
+        self.pos_query()
         
     
     def ip_listening_thread(self):
-        self.server_socket=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind(('localhost', 12345))
-        self.server_socket.listen(1)
-        while True:
+        #self.server_socket=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self.server_socket.bind(('192.168.100.180', 54571))
+        #self.server_socket.listen(1)
+        #self.socket.listen(1)
+        print("starting loop")
+        """while True:
             client_socket, client_address = self.server_socket.accept()
+            print(f"connection from {client_address}")
             if client_address==self.camera_ip:
                 break
             client_socket.close()
+        """
+        print("connected")
         while True:
-            data=client_socket.recv(1024)
-            self.visca_recieve(data)
+            data=self.socket.recv(1024)
+            self.visca_recieve(data.hex())
             if not data:
                 break
         
     def visca_recieve(self,data):
-        print(data)
+        #print(data)
+        if data[0]=="9" and data[1]=="0" and data[2]=="5" and data[3]=="0":
+            pan_str=f"{data[5]}{data[7]}{data[9]}{data[11]}"
+            pan=int(pan_str,16)
+            if pan & (1 << (len(pan_str) * 4 - 1)):
+                # Perform two's complement conversion
+                pan = pan - (1 << (len(pan_str) * 4))
+            self.pan=pan/(2448/180)
+            tilt_str=f"{data[13]}{data[15]}{data[17]}{data[18]}"
+            tilt=int(tilt_str,16)
+            if tilt & (1 << (len(tilt_str) * 4 - 1)):
+                # Perform two's complement conversion
+                tilt = tilt - (1 << (len(tilt_str) * 4))
+            self.tilt=tilt/(1296/90)
+            
+            print(f"Pos Pan:{self.pan} Tilt:{self.tilt}")
         
 
 
@@ -64,6 +91,9 @@ class camera():
             return response
 
         if self.type==1:
+            cmd_str=cmd_str.replace(" ", "")
+            #cmd_str='8101043F0201FF'
+            #print(cmd_str)
             data=bytes.fromhex(cmd_str)
             self.socket.send(data)
     
@@ -86,9 +116,9 @@ class camera():
             pc=1
         tc=3
         if tilt_speed>0:
-            tc=2
-        elif tilt_speed<0:
             tc=1
+        elif tilt_speed<0:
+            tc=2
         pan_speed=abs(pan_speed)
         tilt_speed=abs(tilt_speed)
 
@@ -110,8 +140,9 @@ class camera():
         pan_pos_cmd=list(pan_pos_cmd)
         tilt_pos_cmd=list(tilt_pos_cmd)
 
-        
-        command=f"8{self.address} 01 06 02 {format(pan_speed, '02x')} 00 0{pan_pos_cmd[0]} 0{pan_pos_cmd[1]} 0{pan_pos_cmd[2]} 0{pan_pos_cmd[3]} 0{pan_pos_cmd[4]} 0{tilt_pos_cmd[0]} 0{tilt_pos_cmd[1]} 0{tilt_pos_cmd[2]} 0{tilt_pos_cmd[3]} FF"
+        tilt_speed=10
+        command=f"8{self.address} 01 06 02 {format(pan_speed, '02x')} {format(tilt_speed, '02x')} 0{pan_pos_cmd[0]} 0{pan_pos_cmd[1]} 0{pan_pos_cmd[2]} 0{pan_pos_cmd[3]} 0{tilt_pos_cmd[0]} 0{tilt_pos_cmd[1]} 0{tilt_pos_cmd[2]} 0{tilt_pos_cmd[3]} FF"
+        #81 01 06 02 VV WW 0Y 0Y 0Y 0Y 0Z 0Z 0Z 0Z FF
         print(command)
         print(self.send_cmd(command))
     
@@ -125,6 +156,15 @@ class camera():
         command=f"8{self.address} 01 04 47 0{zoom[0]} 0{zoom[1]} 0{zoom[2]} 0{zoom[3]} FF"
         print(self.send_cmd(command))
     
+    def position_controller(self,pan_goal,tilt_goal):
+        while self.control_mode==1:
+            self.pos_query()
+            pan_cmd=min(max(int((pan_goal-self.pan)*.5),-18),18)
+            tilt_cmd=min(max(int((tilt_goal-self.tilt)*.5),-18),18)
+            self.move(pan_cmd,tilt_cmd)
+            print(f"Pan:{self.pan} tilt:{self.tilt} cmds: pan:{pan_cmd} tilt:{tilt_cmd}")
+            time.sleep(.01)
+
     def zoom(self,speed):
         
         if speed>0:
@@ -153,9 +193,9 @@ class camera():
     def pos_query(self):
         
         command=f"8{self.address} 09 06 12 FF"
-        result=self.send_cmd(command)
+        self.send_cmd(command)
         #print(result)
-        matches=re.findall(r'\\x([a-fA-F0-9]+)',str(result))
+        """"matches=re.findall(r'\\x([a-fA-F0-9]+)',str(result))
         if len(matches)>6:
             pan_nums=matches[1][1]+matches[2][1]+matches[3][1]+matches[4][1]+matches[5][1]
         else:
@@ -164,7 +204,7 @@ class camera():
         #print(pan_value)
         #print(pan_nums)
         #print(matches)
-    
+        """
     def parse(self,data):
 
         matches=re.findall(r'\\x([a-fA-S0-9]+)',str(data))
@@ -198,7 +238,7 @@ class camera():
         
 
 if __name__=="__main__":
-    cam=camera("/dev/ttyUSB0")
+    cam=camera(None,"192.168.100.88",1259)
     speeds=[]
     i=18
     #cam.cam_ser.reset_input_buffer()
@@ -206,6 +246,7 @@ if __name__=="__main__":
     #cam.move(-18,0)
     #time.sleep(10)
     print("Starting")
+    #cam.move(1,1)
     """while abs(i)<=18:
         start=time.time()
         cam.responses=[]
@@ -228,13 +269,26 @@ if __name__=="__main__":
         time.sleep(1)
     print(speeds)
     """
-    cam.abs_pos(18,18,0,-10)
+    #cam.abs_pos(18,0,0)
 
     #cam.zoom_pos(0)
     #cam.zoom(-4)
     #cam.zoom_pos(60)
     #time.sleep(1)
-    cam.abs_pos(18,18,-6,13)
+    #cam.move(-6,6)
+    #for i in range(0,100):
+        #cam.pos_query()
+        #cam.abs_pos(18,i/10.0,0)
+        #time.sleep(.03)
+    cam.zoom_pos(100)
+    cam.abs_pos(18,180,10)
+    time.sleep(2)
+
+    cam.position_controller(0,0)
+        
+    #for i in range(0,18):
+        #cam.move(-1*i,-1*i)
+        #time.sleep(.1)
     #cam.zoom(-7)
     #cam.exposure_set()
     #cam.focus_mode_set()
@@ -243,4 +297,4 @@ if __name__=="__main__":
 
         
 
-    cam.cam_ser.close()
+    #cam.cam_ser.close()
