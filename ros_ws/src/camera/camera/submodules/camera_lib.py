@@ -16,6 +16,10 @@ class camera():
         self.control_mode=1
         self.pan=0
         self.tilt=0
+        self.zoom=0
+        self.closed_pan_goal=0.0
+        self.closed_tilt_goal=0.0
+        self.closed_zoom_goal=0.0
         if ip_addr:
             self.setup_socket(ip_addr,port)
             self.type=1
@@ -23,7 +27,16 @@ class camera():
             listener.start()
         
         self.pos_query()
-        
+        self.position_thread=threading.Thread(target=self.position_controller_thread)
+        self.position_thread.start()
+
+    
+    def position_controller_thread(self):
+        while True:
+            if self.control_mode==1:
+                self.position_controller(self.closed_pan_goal,self.closed_tilt_goal)
+                time.sleep(.1)
+
     
     def ip_listening_thread(self):
         #self.server_socket=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -47,7 +60,7 @@ class camera():
         
     def visca_recieve(self,data):
         #print(data)
-        if data[0]=="9" and data[1]=="0" and data[2]=="5" and data[3]=="0":
+        if data[0]=="9" and data[1]=="0" and data[2]=="5" and data[3]=="0" and len(data)==22:
             pan_str=f"{data[5]}{data[7]}{data[9]}{data[11]}"
             pan=int(pan_str,16)
             if pan & (1 << (len(pan_str) * 4 - 1)):
@@ -61,10 +74,18 @@ class camera():
                 tilt = tilt - (1 << (len(tilt_str) * 4))
             self.tilt=tilt/(1296/90)
             
-            print(f"Pos Pan:{self.pan} Tilt:{self.tilt}")
+            #print(f"Pos Pan:{self.pan} Tilt:{self.tilt}")
+        elif data[0]=="9" and data[1]=="0" and data[2]=="5" and data[3]=="0" and len(data)==14:
+            zoom_str=f"{data[5]}{data[7]}{data[9]}{data[11]}"
+            zoom=int(zoom_str,16)
+            zoom=100*zoom/16384
+            print(f"zoom pos: {zoom}")
+            self.zoom=zoom
+        
         
 
-
+    def zoom_query(self):
+        self.send_cmd(f"8{self.address} 09 04 47 FF")
 
 
     def setup_socket(self,ip,port):
@@ -157,23 +178,33 @@ class camera():
         print(self.send_cmd(command))
     
     def position_controller(self,pan_goal,tilt_goal):
-        while self.control_mode==1:
-            self.pos_query()
-            pan_cmd=min(max(int((pan_goal-self.pan)*.5),-18),18)
-            tilt_cmd=min(max(int((tilt_goal-self.tilt)*.5),-18),18)
-            self.move(pan_cmd,tilt_cmd)
-            print(f"Pan:{self.pan} tilt:{self.tilt} cmds: pan:{pan_cmd} tilt:{tilt_cmd}")
-            time.sleep(.01)
+        self.pos_query()
+        self.zoom_query()
+        pan_cmd=min(max(int((pan_goal-self.pan)*.5),-18),18)
+        tilt_cmd=min(max(int((tilt_goal-self.tilt)*.5),-18),18)
+        #self.move(pan_cmd,tilt_cmd)
+        
+        self.zoom_pos(self.closed_zoom_goal)
 
-    def zoom(self,speed):
+        # dz=self.closed_zoom_goal-self.zoom
+        # print(dz)
+        # if abs(dz) < 10:
+        #     self.zoom_speed(0)
+        # else:
+        #     command=.25*dz
+            #self.zoom_speed(int(max(-7,min(7,command))))
+        #print(f"Pan:{self.pan} tilt:{self.tilt} cmds: pan:{pan_cmd} tilt:{tilt_cmd}")
+        
+
+    def zoom_speed(self,speed):
         
         if speed>0:
             zc=2
         else:
             zc=3
-
+        
         command=f"8{self.address} 01 04 07 {zc}{abs(speed)} FF"
-        print(self.send_cmd(command))
+        self.send_cmd(command)
 
     def image_flip(self,on):
         command=f"8{self.address} 01 04 66 0{3-on} FF"
@@ -238,7 +269,7 @@ class camera():
         
 
 if __name__=="__main__":
-    cam=camera(None,"192.168.100.88",1259)
+    cam=camera(None,"192.168.1.220",1259)
     speeds=[]
     i=18
     #cam.cam_ser.reset_input_buffer()
@@ -280,12 +311,19 @@ if __name__=="__main__":
         #cam.pos_query()
         #cam.abs_pos(18,i/10.0,0)
         #time.sleep(.03)
-    cam.zoom_pos(100)
-    cam.abs_pos(18,180,10)
-    time.sleep(2)
+    #cam.zoom_pos(100)
+    #cam.abs_pos(18,180,10)
+    #time.sleep(2)
 
-    cam.position_controller(0,0)
-        
+    #cam.position_controller(0,0)
+    cam.control_mode=1
+    while True:
+        for i in range(-1800,1800):
+            cam.closed_pan_goal=i/10
+            cam.closed_zoom_goal=(((i/10)/360)+.5)*100
+            #cam.closed_zoom_goal=20
+            time.sleep(.01)
+            #cam.abs_pos(12,i,0)
     #for i in range(0,18):
         #cam.move(-1*i,-1*i)
         #time.sleep(.1)
