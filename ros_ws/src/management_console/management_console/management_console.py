@@ -9,7 +9,7 @@ def main():
     
     engine = QQmlApplicationEngine()
     
-    data_model = DataModel("Management_console",management=True)
+    data_model = DataModel(name="Management_console",management=True)
 
     # Expose the DataModel instance to QML
     engine.rootContext().setContextProperty("dataModel", data_model)
