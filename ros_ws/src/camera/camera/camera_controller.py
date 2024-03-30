@@ -18,6 +18,7 @@ from tf2_ros.transform_listener import TransformListener
 from geometry_msgs.msg import TransformStamped
 import tf2_ros
 from std_msgs.msg import Int16
+from iqs_msgs.msg import Camera
 
 class camera_obj:
     def __init__(self,ip_addr,port,com_port,x,y,z,yaw):
@@ -38,7 +39,7 @@ class camera_obj:
 class MyNode(Node):
 
     def __init__(self):
-        super().__init__('my_node')
+        super().__init__('camera_controller')
         db,cursor =cursor_connection()
         self.get_logger().info('camera controller startup')
 
@@ -59,6 +60,7 @@ class MyNode(Node):
         self.tag_sub= self.create_subscription(PoseArray,"tag_array",self.tag_callback,10)
         self.track_state_sub=self.create_subscription(Int16,"track_state",self.track_state_callback,10)
         self.track_state_camera_setting_update()
+        self.camera_msg_sub = self.create_subscription(Camera,"Camera_1",self.camera_msg_callback,10)
 
     def lookup_transform(self, target_frame, source_frame):
         try:
@@ -122,6 +124,24 @@ class MyNode(Node):
             if cam.auto_mode==2 and cam.mode==3:
                 cam.visca_obj.call_preset(cam.preset)
 
+    def camera_msg_callback(self,msg):
+        """
+        Modes:
+        0: idle
+        1: speed control
+        2: closed loop control
+        3: position control
+        4: preset
+        """
+        if msg.mode==0:
+            pass
+        elif msg.mode==1:
+            pass
+            self.cams[0].
+        elif msg.mode==2:
+            pass
+        elif msg.mode==3:
+            pass
 
 def main(args=None):
     rclpy.init(args=args)
