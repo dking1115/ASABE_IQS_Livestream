@@ -1,3 +1,7 @@
 [submodule "dwm1001_ros2"]
 	path = dwm1001_ros2
 	url = https://github.com/the-hive-lab/dwm1001_ros2.git
+[submodule "dwm1001_ros2_2"]
+	path = ros_ws/src/dwm1001_ros2
+	url = https://github.com/the-hive-lab/dwm1001_ros2.git
+	
