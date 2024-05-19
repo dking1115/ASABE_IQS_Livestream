@@ -1,0 +1,7 @@
+std_msgs/Header header
+float64 pan_pos_cmd
+float64 tilt_pos_cmd
+float64 pan_speed_cmd
+float64 tilt_speed_cmd
+float64 zoom_pos_cmd
+int8 control_mode

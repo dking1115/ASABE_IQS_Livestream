@@ -18,6 +18,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/SetParam.srv"
   "srv/ScanManuverability.srv"
   "msg/Sled.msg"
+  "msg/Strarr.msg"
+  "msg/Camera.msg"
   DEPENDENCIES
   geometry_msgs
  )

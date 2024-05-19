@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "chrono": "cpp",
-        "random": "cpp"
-    },
-    "cmake.configureOnOpen": false
-}

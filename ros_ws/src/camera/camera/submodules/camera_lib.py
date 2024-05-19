@@ -13,7 +13,7 @@ class camera():
         self.camera_ip=ip_addr
         self.pan_position=0
         self.responses=[]
-        self.control_mode=1
+        self.control_mode=0
         self.pan=0
         self.tilt=0
         self.zoom=0
@@ -33,7 +33,7 @@ class camera():
     
     def position_controller_thread(self):
         while True:
-            if self.control_mode==1:
+            if self.control_mode==2:
                 self.position_controller(self.closed_pan_goal,self.closed_tilt_goal)
                 time.sleep(.1)
 
@@ -100,7 +100,7 @@ class camera():
                 self.parse(additional_data)
             else:
                 additional_data = None
-            print(cmd_str)
+            #print(cmd_str)
             command=bytes.fromhex(cmd_str)
             self.cam_ser.write(command)
             if self.cam_ser.in_waiting > 0:
@@ -164,8 +164,8 @@ class camera():
         tilt_speed=10
         command=f"8{self.address} 01 06 02 {format(pan_speed, '02x')} {format(tilt_speed, '02x')} 0{pan_pos_cmd[0]} 0{pan_pos_cmd[1]} 0{pan_pos_cmd[2]} 0{pan_pos_cmd[3]} 0{tilt_pos_cmd[0]} 0{tilt_pos_cmd[1]} 0{tilt_pos_cmd[2]} 0{tilt_pos_cmd[3]} FF"
         #81 01 06 02 VV WW 0Y 0Y 0Y 0Y 0Z 0Z 0Z 0Z FF
-        print(command)
-        print(self.send_cmd(command))
+        #print(command)
+        self.send_cmd(command)
     
     def zoom_pos(self,zoom_pos_cmd):
         """Zoom to specfic level."""
@@ -175,14 +175,14 @@ class camera():
         #print(zoom)
         zoom=list(hex(zoom)[2:].zfill(4))
         command=f"8{self.address} 01 04 47 0{zoom[0]} 0{zoom[1]} 0{zoom[2]} 0{zoom[3]} FF"
-        print(self.send_cmd(command))
+        self.send_cmd(command)
     
     def position_controller(self,pan_goal,tilt_goal):
         self.pos_query()
         self.zoom_query()
-        pan_cmd=min(max(int((pan_goal-self.pan)*.5),-18),18)
+        pan_cmd=-1*min(max(int((pan_goal-self.pan_position)*.5),-18),18)
         tilt_cmd=min(max(int((tilt_goal-self.tilt)*.5),-18),18)
-        #self.move(pan_cmd,tilt_cmd)
+        self.move(pan_cmd,tilt_cmd)
         
         self.zoom_pos(self.closed_zoom_goal)
 
@@ -208,18 +208,18 @@ class camera():
 
     def image_flip(self,on):
         command=f"8{self.address} 01 04 66 0{3-on} FF"
-        print(self.send_cmd(command))
+        self.send_cmd(command)
 
     def set_gain(self,value):
         ##value 1-12
         value=hex(value)[2:]
         command=f"8{self.address} 01 04 4C 00 00 00 0{value} FF"
-        print(self.send_cmd(command))
+        self.send_cmd(command)
 
     def set_white_balance(self,value):
         #value 0-5
         command=f"8{self.address} 01 04 35 0{value} FF"
-        print(self.send_cmd(command))
+        self.send_cmd(command)
     
     def pos_query(self):
         
@@ -247,11 +247,17 @@ class camera():
                 start=i+1
         #print(responses)
         for response in responses:
-            if response[0]=='90P':
-                print(response)
-                pan_nums=response[1][1]+response[2][1]+response[3][1]+response[4][1]+response[5][1]
-                self.pan_position=int(pan_nums,20)
-                print(self.pan_position)
+            if response[0]=='90P' and len(response)>6:
+                try:
+                    print(response)
+                    pan_nums=response[1][1]+response[2][1]+response[3][1]+response[4][1]+response[5][1]
+                    num=int(pan_nums,16)
+                    if num & (1 << (len(pan_nums) * 4 - 1)):
+                        num -= 1 << len(pan_nums) * 4
+                    self.pan_position=num
+                    print(self.pan_position)
+                except:
+                    pass
         self.responses=responses
         #print(responses)
     def exposure_set(self):
@@ -269,7 +275,8 @@ class camera():
         
 
 if __name__=="__main__":
-    cam=camera(None,"192.168.1.220",1259)
+    #cam=camera(None,"192.168.1.220",1259)
+    cam=camera("/dev/ttyUSB0",None,None)
     speeds=[]
     i=18
     #cam.cam_ser.reset_input_buffer()
@@ -317,13 +324,19 @@ if __name__=="__main__":
 
     #cam.position_controller(0,0)
     cam.control_mode=1
-    while True:
-        for i in range(-1800,1800):
-            cam.closed_pan_goal=i/10
-            cam.closed_zoom_goal=(((i/10)/360)+.5)*100
-            #cam.closed_zoom_goal=20
-            time.sleep(.01)
-            #cam.abs_pos(12,i,0)
+    #cam.abs_pos(7,-10,10)
+    #cam.move(10,0)
+    # while True:
+    #     for i in range(-1800,1800):
+    #         cam.closed_pan_goal=i/10
+    #         cam.closed_zoom_goal=(((i/10)/360)+.5)*100
+    #         #cam.closed_zoom_goal=20
+    #         time.sleep(.1)
+    #         #cam.abs_pos(12,i,0)
+    
+    cam.closed_pan_goal=0
+    cam.closed_zoom_goal=(((0/10)/360)+.5)*100
+
     #for i in range(0,18):
         #cam.move(-1*i,-1*i)
         #time.sleep(.1)
