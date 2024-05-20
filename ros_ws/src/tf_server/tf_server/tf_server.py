@@ -9,7 +9,10 @@ class MyNode(Node):
         super().__init__('my_node')
         db,cursor =cursor_connection()
         self.get_logger().info('tf server startup')
-        self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
+        self.static_tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self)
+        self.dyn_tf_broadcaster = tf2_ros.TransformBroadcaster(self)
+        self.cam_timer=self.create_timer(10,self.publish_camera_tf)
+        self.sled_sub=self.create_subscription(Sled,"sled",self.sled_callback,10)
 
     def get_track(self):
         db,cursor=cursor_connection()
@@ -19,22 +22,29 @@ class MyNode(Node):
         for i in result:
             start_x,start_y,end_x,end_y=i
     
-    def publish_sled_tf(self):
-
+    def publish_camera_tf(self):
+        i=2
         transform = TransformStamped()
         transform.header.stamp = self.get_clock().now().to_msg()
         transform.header.frame_id = 'map'
         transform.child_frame_id = f'camera{i}'
-        transform.transform.translation.x = self.cams[i].x
-        transform.transform.translation.y = self.cams[i].y
-        transform.transform.translation.z = 0.0
-        self.tf_broadcaster.sendTransform(transform)
-        
+        transform.transform.translation.x = 10.1
+        transform.transform.translation.y = 12.4
+        transform.transform.translation.z = 1.4
+        self.static_tf_broadcaster.sendTransform(transform)
+    
 
     def sled_callback(self,msg):
-        dist=msg.pull_dist
-        self.sled_tf=TransformStamped()
-        self.sled_tf.header.stamp=msg.header.stamp
+        dist=msg.distance
+        transform=TransformStamped()
+        transform.header.stamp=msg.header.stamp
+        transform.header.frame_id = 'map'
+        transform.child_frame_id = f'sled'
+        transform.transform.translation.x = 10.1 + (dist*0.3048)
+        transform.transform.translation.y = 0.0
+        transform.transform.translation.z = 1.0
+        self.dyn_tf_broadcaster.sendTransform(transform)
+
         
 
 def main(args=None):

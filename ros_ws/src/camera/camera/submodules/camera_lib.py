@@ -35,6 +35,7 @@ class camera():
         while True:
             if self.control_mode==2:
                 self.position_controller(self.closed_pan_goal,self.closed_tilt_goal)
+                #print(self.closed_pan_goal)
                 time.sleep(.1)
 
     
@@ -54,6 +55,7 @@ class camera():
         print("connected")
         while True:
             data=self.socket.recv(1024)
+            #print("rcv")
             self.visca_recieve(data.hex())
             if not data:
                 break
@@ -73,13 +75,13 @@ class camera():
                 # Perform two's complement conversion
                 tilt = tilt - (1 << (len(tilt_str) * 4))
             self.tilt=tilt/(1296/90)
-            
+            self.pan_position=self.pan
             #print(f"Pos Pan:{self.pan} Tilt:{self.tilt}")
         elif data[0]=="9" and data[1]=="0" and data[2]=="5" and data[3]=="0" and len(data)==14:
             zoom_str=f"{data[5]}{data[7]}{data[9]}{data[11]}"
             zoom=int(zoom_str,16)
             zoom=100*zoom/16384
-            print(f"zoom pos: {zoom}")
+            #print(f"zoom pos: {zoom}")
             self.zoom=zoom
         
         
@@ -180,8 +182,10 @@ class camera():
     def position_controller(self,pan_goal,tilt_goal):
         self.pos_query()
         self.zoom_query()
-        pan_cmd=-1*min(max(int((pan_goal-self.pan_position)*.5),-18),18)
+        pan_cmd=min(max(int((pan_goal-self.pan_position)*.5),-18),18)
         tilt_cmd=min(max(int((tilt_goal-self.tilt)*.5),-18),18)
+        #print(f"goals: pan:{pan_goal} tilt:{tilt_goal}")
+        print(f"cmds pan:{pan_cmd} tilt:{tilt_cmd} goals: pan:{pan_goal} tilt:{tilt_goal} pan:{self.pan_position} tilt:{self.tilt}" )
         self.move(pan_cmd,tilt_cmd)
         
         self.zoom_pos(self.closed_zoom_goal)
@@ -197,13 +201,15 @@ class camera():
         
 
     def zoom_speed(self,speed):
-        
-        if speed>0:
+        if speed ==0:
+            zc=0
+        elif speed>0:
             zc=2
         else:
             zc=3
         
         command=f"8{self.address} 01 04 07 {zc}{abs(speed)} FF"
+        print(abs(speed))
         self.send_cmd(command)
 
     def image_flip(self,on):
@@ -255,7 +261,7 @@ class camera():
                     if num & (1 << (len(pan_nums) * 4 - 1)):
                         num -= 1 << len(pan_nums) * 4
                     self.pan_position=num
-                    print(self.pan_position)
+                    #print(self.pan_position)
                 except:
                     pass
         self.responses=responses
@@ -275,8 +281,10 @@ class camera():
         
 
 if __name__=="__main__":
-    #cam=camera(None,"192.168.1.220",1259)
-    cam=camera("/dev/ttyUSB0",None,None)
+    cam=camera(None,"192.168.1.220",1259)
+    cam.move(-18,0)
+    time.sleep(10)
+    #cam=camera("/dev/ttyUSB0",None,None)
     speeds=[]
     i=18
     #cam.cam_ser.reset_input_buffer()
@@ -323,7 +331,7 @@ if __name__=="__main__":
     #time.sleep(2)
 
     #cam.position_controller(0,0)
-    cam.control_mode=1
+    #cam.control_mode=2
     #cam.abs_pos(7,-10,10)
     #cam.move(10,0)
     # while True:
@@ -334,7 +342,7 @@ if __name__=="__main__":
     #         time.sleep(.1)
     #         #cam.abs_pos(12,i,0)
     
-    cam.closed_pan_goal=0
+    cam.closed_pan_goal=80
     cam.closed_zoom_goal=(((0/10)/360)+.5)*100
 
     #for i in range(0,18):

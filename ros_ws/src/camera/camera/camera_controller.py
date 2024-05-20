@@ -40,6 +40,7 @@ class camera_obj:
         self.zoom_pos_cmd=0
         self.pan_speed_cmd=0
         self.tilt_speed_cmd=0
+        self.pzoom=1
 
 class MyNode(Node):
 
@@ -67,6 +68,7 @@ class MyNode(Node):
         # self.track_state_sub=self.create_subscription(Int16,"track_state",self.track_state_callback,10)
         # #self.track_state_camera_setting_update()
         self.camera_msg_sub = self.create_subscription(Camera,"Camera_1",self.camera_msg_callback,10)
+        
 
     # def lookup_transform(self, target_frame, source_frame):
     #     try:
@@ -139,10 +141,12 @@ class MyNode(Node):
         3: position control
         4: preset
         """
-        cam_id=3
+        cam_id=2
         self.cams[cam_id].visca_obj.control_mode=msg.control_mode
         self.cams[cam_id].tilt_pos_cmd=msg.tilt_pos_cmd
         self.cams[cam_id].pan_pos_cmd=msg.pan_pos_cmd
+        self.cams[cam_id].visca_obj.closed_pan_goal=msg.pan_pos_cmd
+        self.cams[cam_id].visca_obj.closed_tilt_goal=msg.tilt_pos_cmd
         self.cams[cam_id].zoom_pos_cmd=msg.zoom_pos_cmd
         self.cams[cam_id].pan_speed_cmd=msg.pan_speed_cmd
         self.cams[cam_id].tilt_speed_cmd=msg.tilt_speed_cmd
@@ -150,6 +154,9 @@ class MyNode(Node):
             pass
         elif msg.control_mode==1:
             self.cams[cam_id].visca_obj.move(int(msg.pan_speed_cmd),int(msg.tilt_speed_cmd))
+            cmd=msg.zoom_speed_cmd
+            if int(msg.zoom_speed_cmd*7) != 0 or self.cams[cam_id].pzoom!=0:
+                self.cams[cam_id].visca_obj.zoom_speed(int(msg.zoom_speed_cmd*7))
             pass
         elif msg.control_mode ==2:
             pass

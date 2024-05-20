@@ -13,7 +13,7 @@ class ObsSubscriber(Node):
         self.subscription  # prevent unused variable warning
         logging.basicConfig(level=logging.DEBUG)
         self.parameters = simpleobsws.IdentificationParameters(ignoreNonFatalRequestChecks=False)
-        self.ws = simpleobsws.WebSocketClient(url='ws://192.168.1.139:4455', password='ZDT4dGz7WYcbM5EY',
+        self.ws = simpleobsws.WebSocketClient(url='ws://192.168.1.226:4455', password='ZDT4dGz7WYcbM5EY',
                                               identification_parameters=self.parameters)
         asyncio.run(self.connect())
 
@@ -28,7 +28,7 @@ class ObsSubscriber(Node):
         request.requestData={"sceneName":message.data}
         #request = simpleobsws.Request(message.data)
         ret = await self.ws.call(request)
-        print(ret)
+        print(f"returned {ret}")
         if ret.ok():
             self.get_logger().info("Request succeeded! Response data: {}".format(ret.responseData))
             results = ret.responseData
@@ -39,8 +39,8 @@ class ObsSubscriber(Node):
         try:
             self.get_logger().info("Received command: {}".format(msg.data))
             asyncio.run(self.make_request(msg))
-        except:
-            self.get_logger().info("Error")
+        except Exception as E:
+            self.get_logger().info(f"Error: {E}")
 
 def main(args=None):
     rclpy.init(args=args)
