@@ -62,7 +62,7 @@ class MyNode(Node):
         db.close()
         print(self.cams)
         for cam_key in self.cams.keys():
-            self.create_subscription(Camera,"Camera_1",partial(self.camera_msg_callback,id=cam_key),10)
+            self.create_subscription(Camera,f"Camera_{cam_key}",partial(self.camera_msg_callback,id=cam_key),10)
         # self.tf_buffer = Buffer()
         # self.tf_listener = TransformListener(self.tf_buffer, self)
         # self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
