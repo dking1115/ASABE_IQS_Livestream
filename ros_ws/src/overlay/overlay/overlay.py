@@ -1,6 +1,28 @@
+import sys
+from PyQt5.QtCore import QUrl
+from PyQt5.QtGui import QGuiApplication
+from PyQt5.QtQml import QQmlApplicationEngine
+#from unified_backend.data_model import DataModel
+
 def main():
-    print('Hi from overlay.')
+    app = QGuiApplication(sys.argv)
+    
+    engine = QQmlApplicationEngine()
+    
+    #data_model = DataModel(name="Management_console",management=True)
 
+    # Expose the DataModel instance to QML
+    #engine.rootContext().setContextProperty("dataModel", data_model)
+    print("done")
+    #engine.load("file://~/iqs/ros_ws/QML/management.qml")
+    #engine.load("QML/management.qml")
+    path=QUrl.fromLocalFile("QML/Overlay.qml").path()
+    print(path)
+    engine.load(path)
+    
+    print("done")
 
-if __name__ == '__main__':
-    main()
+    if not engine.rootObjects():
+        sys.exit(-1)
+
+    sys.exit(app.exec_())
