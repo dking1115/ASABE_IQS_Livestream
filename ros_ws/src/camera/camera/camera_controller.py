@@ -70,7 +70,7 @@ class MyNode(Node):
         # self.tag_sub= self.create_subscription(PoseArray,"tag_array",self.tag_callback,10)
         # self.track_state_sub=self.create_subscription(Int16,"track_state",self.track_state_callback,10)
         # #self.track_state_camera_setting_update()
-        self.camera_msg_sub = self.create_subscription(Camera,"Camera_1",self.camera_msg_callback,10)
+        #self.camera_msg_sub = self.create_subscription(Camera,"Camera_1",self.camera_msg_callback,10)
         
 
     # def lookup_transform(self, target_frame, source_frame):
