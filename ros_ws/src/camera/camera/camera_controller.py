@@ -19,6 +19,7 @@ from geometry_msgs.msg import TransformStamped
 import tf2_ros
 from std_msgs.msg import Int16
 from iqs_msgs.msg import Camera
+from functools import partial
 
 class camera_obj:
     def __init__(self,ip_addr,port,com_port,x,y,z,yaw):
@@ -60,6 +61,8 @@ class MyNode(Node):
             self.cams[id]=cam
         db.close()
         print(self.cams)
+        for cam_key in self.cams.keys():
+            self.create_subscription(Camera,"Camera_1",partial(self.camera_msg_callback,id=cam_key),10)
         # self.tf_buffer = Buffer()
         # self.tf_listener = TransformListener(self.tf_buffer, self)
         # self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
@@ -132,7 +135,7 @@ class MyNode(Node):
     #         if cam.auto_mode==2 and cam.mode==3:
     #             cam.visca_obj.call_preset(cam.preset)
 
-    def camera_msg_callback(self,msg):
+    def camera_msg_callback(self,msg,id):
         """
         Modes:
         0: idle
@@ -141,7 +144,7 @@ class MyNode(Node):
         3: position control
         4: preset
         """
-        cam_id=2
+        cam_id=int(id)
         self.cams[cam_id].visca_obj.control_mode=msg.control_mode
         self.cams[cam_id].tilt_pos_cmd=msg.tilt_pos_cmd
         self.cams[cam_id].pan_pos_cmd=msg.pan_pos_cmd

@@ -15,15 +15,18 @@ class ObsSubscriber(Node):
         self.parameters = simpleobsws.IdentificationParameters(ignoreNonFatalRequestChecks=False)
         self.ws = simpleobsws.WebSocketClient(url='ws://192.168.1.226:4455', password='ZDT4dGz7WYcbM5EY',
                                               identification_parameters=self.parameters)
-        asyncio.run(self.connect())
+        #asyncio.run(self.connect())
+        self.loop=asyncio.new_event_loop()
+        
+        
 
     async def connect(self):
         await self.ws.connect()
         await self.ws.wait_until_identified()
 
     async def make_request(self, message):
-        
-        
+        await self.ws.connect()
+        await self.ws.wait_until_identified()
         request=simpleobsws.Request('SetCurrentProgramScene')
         request.requestData={"sceneName":message.data}
         #request = simpleobsws.Request(message.data)
@@ -33,12 +36,14 @@ class ObsSubscriber(Node):
             self.get_logger().info("Request succeeded! Response data: {}".format(ret.responseData))
             results = ret.responseData
 
-        #await self.ws.disconnect()
+        await self.ws.disconnect()
 
     def callback(self, msg):
         try:
+            
             self.get_logger().info("Received command: {}".format(msg.data))
-            asyncio.run(self.make_request(msg))
+            self.loop.run_until_complete(self.make_request(msg))
+            
         except Exception as E:
             self.get_logger().info(f"Error: {E}")
 
