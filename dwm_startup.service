@@ -1,0 +1,16 @@
+[Unit]
+Description=DWM Startup
+After=systemd-user-sessions.service
+
+[Service]
+Type=simple
+User=pi1
+Group=pi1
+ExecStartPre=/bin/sleep 15
+WorkingDirectory=/home/pi1/asabe_livestream/
+ExecStart=/usr/bin/bash -c  "source /opt/ros/humble/setup.bash; source /home/pi1/asabe_livestream/install/setup.bash; ros2 launch dwm_manager dwm_manager.launch.py" 
+#EnvironmentFile=/etc/balehawk_startup/balehawk_startup.conf
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
