@@ -60,11 +60,12 @@ private:
         transform_stamped.header.stamp = msg->header.stamp;
 
         // Publish the transform
-        tf_broadcaster_->sendTransform(transform_stamped);
-
-        tag2_transform = transform_stamped;
-
-        tag2_received = true;
+        // Publish the transform
+        if (!std::isnan(transform_stamped.transform.translation.x) && !std::isnan(transform_stamped.transform.translation.y)){
+            tf_broadcaster_->sendTransform(transform_stamped);
+            tag2_transform = transform_stamped;
+            tag2_received = true;
+        }
     }
 
     void Tag1pointStampedCallback(const geometry_msgs::msg::PointStamped::SharedPtr msg) {
@@ -90,11 +91,13 @@ private:
         transform_stamped.header.stamp = msg->header.stamp;
 
         // Publish the transform
-        tf_broadcaster_->sendTransform(transform_stamped);
+        if (!std::isnan(transform_stamped.transform.translation.x) && !std::isnan(transform_stamped.transform.translation.y)){
+            tf_broadcaster_->sendTransform(transform_stamped);
+            tag1_transform = transform_stamped;
+            tag1_received = true;
+        }
 
-        tag1_transform = transform_stamped;
 
-        tag1_received = true;
     }
 
     //Publish initiator to base transform based on tag locations
