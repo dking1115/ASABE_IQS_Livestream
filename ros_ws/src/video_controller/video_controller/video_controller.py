@@ -6,16 +6,18 @@ from iqs_msgs.msg import Camera
 from sensor_msgs.msg import Joy
 import tf2_ros
 import math
+from iqs_msgs.msg import OverlayObj, OverlayArray
 class SimplePublisher(Node):
     def __init__(self):
         super().__init__('Video_Controller')  # Node name
         self.obs_publisher_ = self.create_publisher(String, 'OBS_Scene', 10)
         self.camera_publisher = self.create_publisher(Camera, "Camera_1",10)
-        #self.timer = self.create_timer(.01,self.timer_callback)
+        self.timer = self.create_timer(.01,self.timer_callback)
         self.tf_buffer = tf2_ros.Buffer()
         self.joy_move=[0.0,0.0,0.0]
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
         self.joystick_sub=self.create_subscription(Joy,"joy",self.joy_callback,10)
+        self.overlay_pub=self.create_publisher(OverlayArray,"overlay_cmd",10)
     
     def joy_callback(self,msg):
         camera_msg=Camera()
@@ -26,7 +28,6 @@ class SimplePublisher(Node):
         camera_msg.pan_speed_cmd=self.joy_move[0]*18*-1
         camera_msg.tilt_speed_cmd=self.joy_move[1]*18
         camera_msg.zoom_speed_cmd=self.joy_move[2]
-
         self.camera_publisher.publish(camera_msg)
 
     def timer_callback(self):
@@ -36,7 +37,7 @@ class SimplePublisher(Node):
         y=1.0
         z=1.0
         try:
-            transform = self.tf_buffer.lookup_transform('camera2', 'sled', rclpy.time.Time())
+            transform = self.tf_buffer.lookup_transform('camera2', 'base', rclpy.time.Time())
             t=[transform.transform.translation.x,transform.transform.translation.y,transform.transform.translation.z]
             print(t)
             x=transform.transform.translation.x
@@ -48,10 +49,18 @@ class SimplePublisher(Node):
         
         dist=math.sqrt(x**2+y**2+z**2)
         xy_dist=math.sqrt(x**2+y**2)
+        print(math.degrees(math.asin(x/xy_dist)))
+        print(-1*math.degrees(math.asin(-1*z/xy_dist)))
         cam_angle=[0,math.degrees(math.asin(x/xy_dist))*-1+90,-1*math.degrees(math.asin(-1*z/xy_dist))]
         camera_msg.pan_pos_cmd=cam_angle[1]
         camera_msg.tilt_pos_cmd=cam_angle[2]
         camera_msg.control_mode=2
+        ob=OverlayObj()
+        ar=OverlayArray()
+        ob.name="Pulls"
+        ob.enabled=True
+        ar.overlays.append(ob)
+        self.overlay_pub.publish(ar)
 
         
 

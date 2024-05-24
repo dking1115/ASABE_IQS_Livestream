@@ -26,10 +26,10 @@ class MyNode(Node):
         i=2
         transform = TransformStamped()
         transform.header.stamp = self.get_clock().now().to_msg()
-        transform.header.frame_id = 'map'
+        transform.header.frame_id = 'initiator'
         transform.child_frame_id = f'camera{i}'
-        transform.transform.translation.x = 10.1
-        transform.transform.translation.y = 12.4
+        transform.transform.translation.x = 8.0
+        transform.transform.translation.y = 13.0
         transform.transform.translation.z = 1.4
         self.static_tf_broadcaster.sendTransform(transform)
     

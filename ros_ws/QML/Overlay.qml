@@ -10,9 +10,15 @@ ApplicationWindow {
         anchors.fill:parent
         color:"#f542e9"
     }
-    Loader{
+    Repeater{
+        model:dataModel.overlay_obj_qt
+        Loader{
         anchors.fill:parent
-        source:"Pulls.qml"
+        source:modelData.path
+        enabled:modelData.enabled
+        //onLoaded: Console.log(modelData.path)
     }
+    }
+    
 
 }

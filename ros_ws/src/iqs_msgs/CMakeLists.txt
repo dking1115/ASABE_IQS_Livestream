@@ -20,8 +20,11 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Sled.msg"
   "msg/Strarr.msg"
   "msg/Camera.msg"
+  "msg/OverlayObj.msg"
+  "msg/OverlayArray.msg"
   DEPENDENCIES
   geometry_msgs
+  #iqs_msgs
  )
 
 
