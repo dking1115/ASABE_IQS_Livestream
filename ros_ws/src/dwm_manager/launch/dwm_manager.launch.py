@@ -26,4 +26,8 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(os.path.join(dwm1001_driver_launch_dir, 'passive_node.launch.py')),
             launch_arguments={}.items()),
 
+        Node(package = "tf2_ros", 
+            executable = "static_transform_publisher",
+            arguments = ["6.0", "6.0", "0", "0", "0", "0", "initiator", "track_center"]),
+
     ])
