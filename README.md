@@ -14,3 +14,12 @@ Python QT is used for all displays
 
 ## Running
 $ ros2 run management_console management_console 
+
+
+
+
+
+
+
+
+

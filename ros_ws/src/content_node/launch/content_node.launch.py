@@ -9,25 +9,21 @@ from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
 
-    dwm1001_driver_path = get_package_share_directory('dwm1001_launch')
-    dwm1001_driver_launch_dir = os.path.join(dwm1001_driver_path, 'launch')
-
 
     return LaunchDescription([
 
         Node(
-            package='dwm_manager',
-            executable='dwm_manager',
+            package='content_node',
+            executable='content_node',
             parameters=[],
             output='screen',
         ),
 
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(dwm1001_driver_launch_dir, 'passive_node.launch.py')),
-            launch_arguments={}.items()),
-
         Node(package = "tf2_ros", 
             executable = "static_transform_publisher",
-            arguments = ["11.0", "17.0", "0", "0", "0", "0", "initiator", "track_center"]),
+            arguments = ["0", "0", "0", "0", "0", "0", "initiator", "camera_3"]),
+        Node(package = "tf2_ros", 
+            executable = "static_transform_publisher",
+            arguments = ["0", "34.", "0", "0", "0", "0", "initiator", "camera_2"]),
 
     ])

@@ -28,7 +28,7 @@ public:
 
         //Timer cb
         base_pub_timer_ = this->create_wall_timer
-            (std::chrono::milliseconds(500),std::bind(&PointStampedSubscriber::base_pub_cb, this));
+            (std::chrono::milliseconds(100),std::bind(&PointStampedSubscriber::base_pub_cb, this));
         lap_counter_timer_ = this->create_wall_timer
             (std::chrono::milliseconds(500),std::bind(&PointStampedSubscriber::lap_counter_cb, this));
 
@@ -161,6 +161,7 @@ private:
             transform = tf_buffer_->lookupTransform("track_center","base",rclcpp::Time(0),tf2::durationFromSec(0.1));
         } else {
             RCLCPP_ERROR(this->get_logger(), "lap_counter_cb: Unable to transform from track_center to base");
+            return;
         }
         
         //Distance that point must be within quadrant before checking off
