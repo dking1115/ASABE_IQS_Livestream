@@ -10,3 +10,16 @@ Python QT is used for all displays
 
 ## PIP packages
     The unified backend and sql packages are pip packages that can be installed through pip install -e and the directory name
+
+
+## Running
+$ ros2 run management_console management_console 
+
+
+
+
+
+
+
+
+
