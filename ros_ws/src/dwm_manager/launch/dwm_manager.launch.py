@@ -22,6 +22,13 @@ def generate_launch_description():
             output='screen',
         ),
 
+        Node(
+            package='joy',
+            executable='joy_node',
+            parameters=[],
+            output='screen',
+        ),
+
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(dwm1001_driver_launch_dir, 'passive_node.launch.py')),
             launch_arguments={}.items()),

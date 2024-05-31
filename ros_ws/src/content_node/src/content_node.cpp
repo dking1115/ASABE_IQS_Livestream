@@ -9,6 +9,7 @@
 #include <std_msgs/msg/u_int8.hpp>
 #include <iqs_msgs/msg/camera.hpp>
 #include <std_msgs/msg/string.hpp>
+#include <sensor_msgs/msg/joy.hpp>
 
 class ContentNode : public rclcpp::Node {
 public:
@@ -20,6 +21,9 @@ public:
         dur_state_sub = this->create_subscription<std_msgs::msg::UInt8>(
             "/dur_state", 10,
             std::bind(&ContentNode::DurStateCallback, this, std::placeholders::_1));
+        joy_sub = this->create_subscription<sensor_msgs::msg::Joy>(
+            "/joy", 10,
+            std::bind(&ContentNode::JoyCallback, this, std::placeholders::_1));
 
         //Publishers
         obs_scene_pub = this->create_publisher<std_msgs::msg::String>("/OBS_Scene", 10);
@@ -28,7 +32,7 @@ public:
 
         //Timer cb
         base_tracker_timer_ = this->create_wall_timer
-            (std::chrono::milliseconds(500),std::bind(&ContentNode::base_tracker_cb, this));
+            (std::chrono::milliseconds(100),std::bind(&ContentNode::base_tracker_cb, this));
 
         //For tf2_ros
         tf_buffer_ =
@@ -50,11 +54,16 @@ public:
         camera_3_msg.zoom_pos_cmd = 0.;
 
         //Set zoom scaler 
-        zoom_scaler = 2.0;
+        zoom_scaler = 1.25;
 
         //Default use pull state
         //Updates dependent on the state callback it gets
         use_pull_state = true;
+
+        //Default to not use joy
+        use_joy = false;
+        //Default joy camera to 2
+        joy_camera = 2;
     }
 
 private:
@@ -82,130 +91,180 @@ private:
         use_pull_state = false;
     }
 
+    void JoyCallback(const sensor_msgs::msg::Joy::SharedPtr msg) {
+        
+        joy_msg = *msg;
+        //x is 2 //y is 3
+        if (msg->buttons[2] == 1){
+            use_joy = true;
+        } else if (msg->buttons[3] == 1){
+            use_joy = false;
+        }
+        //b is to use camera 2
+        //a is to use camera 3
+        //Switch cameras
+        if (msg->buttons[1] == 1){ //B
+            joy_camera = 2;
+        } else if (msg->buttons[0] == 1){ //A
+            joy_camera = 3;
+        }
+
+    }
+    
+
     void base_tracker_cb()
     {
 
-        //Use to choose which camera
-        //Get transform from track center to base
-        geometry_msgs::msg::TransformStamped transform;
-        if (tf_buffer_->canTransform("track_center","base",this->get_clock()->now(),tf2::durationFromSec(0.2))){
-            transform = tf_buffer_->lookupTransform("track_center","base",this->get_clock()->now(),tf2::durationFromSec(0.2));
-        } else {
-            RCLCPP_ERROR(this->get_logger(), "base_tracker_cb: Unable to transform from track_center to base");
-            return;
-        }
+        if (use_joy){
+            iqs_msgs::msg::Camera camera_msg;
+            camera_msg.control_mode = 1;
+            camera_msg.pan_speed_cmd = joy_msg.axes[0] * 9 * -1;
+            camera_msg.tilt_speed_cmd = joy_msg.axes[1] * 9;
+            camera_msg.zoom_speed_cmd = joy_msg.axes[4];
 
-        //Default to camera 2
-        camera_number = 2;
+            if (joy_camera == 3){
+                //Faster scalers
+                camera_msg.pan_speed_cmd = joy_msg.axes[0] * 18 * -1;
+                camera_msg.tilt_speed_cmd = joy_msg.axes[1] * 18;
+                camera_msg.zoom_speed_cmd = joy_msg.axes[4];
+                camera_3_pub->publish(camera_msg);
+            } else {
+                camera_msg.pan_speed_cmd = joy_msg.axes[0] * 9 * -1;
+                camera_msg.tilt_speed_cmd = joy_msg.axes[1] * 9;
+                camera_msg.zoom_speed_cmd = joy_msg.axes[4];
+                camera_2_pub->publish(camera_msg);
+            }
 
-        //Distance that point must be within quadrant before checking off
-        double dist_thresh = 1.0;
 
-        double x,y;
-        x = transform.transform.translation.x;
-        y = transform.transform.translation.y;
+        } else { // Use auto mode
+            //Use to choose which camera
+            //Get transform from track center to base
+            geometry_msgs::msg::TransformStamped transform;
+            if (tf_buffer_->canTransform("track_center","base",this->get_clock()->now(),tf2::durationFromSec(0.2))){
+                transform = tf_buffer_->lookupTransform("track_center","base",this->get_clock()->now(),tf2::durationFromSec(0.2));
+            } else {
+                RCLCPP_ERROR(this->get_logger(), "base_tracker_cb: Unable to transform from track_center to base");
+                return;
+            }
 
-            
-        if(x > dist_thresh && x < -dist_thresh){
-            //+-
+            //Default to camera 2
             camera_number = 2;
-        } else if (x < -dist_thresh && x < -dist_thresh){
-            //--
-            camera_number = 3;
 
-        } else if (x < -dist_thresh && x > dist_thresh){
-            //-+
-            camera_number = 3;
-        } else if (x > dist_thresh && x > dist_thresh){
-            //++
-            camera_number = 2;
+            //Distance that point must be within quadrant before checking off
+            double dist_thresh = 1.0;
+
+            double x,y;
+            x = transform.transform.translation.x;
+            y = transform.transform.translation.y;
+
+                
+            if(x > dist_thresh && x < -dist_thresh){
+                //+-
+                camera_number = 2;
+            } else if (x < -dist_thresh && x < -dist_thresh){
+                //--
+                camera_number = 3;
+
+            } else if (x < -dist_thresh && x > dist_thresh){
+                //-+
+                camera_number = 3;
+            } else if (x > dist_thresh && x > dist_thresh){
+                //++
+                camera_number = 2;
+            }
+
+            //Get transforms for camera 2 and camera 3 to base
+            geometry_msgs::msg::TransformStamped camera_2_transform;
+            if (tf_buffer_->canTransform("camera_2","base",this->get_clock()->now(),tf2::durationFromSec(0.2))){
+                camera_2_transform = tf_buffer_->lookupTransform("camera_2","base",this->get_clock()->now(),tf2::durationFromSec(0.2));
+            } else {
+                RCLCPP_ERROR(this->get_logger(), "base_tracker_cb: Unable to transform from camera_2 to base");
+                return;
+            }
+            geometry_msgs::msg::TransformStamped camera_3_transform;
+            if (tf_buffer_->canTransform("camera_3","base",this->get_clock()->now(),tf2::durationFromSec(0.2))){
+                camera_3_transform = tf_buffer_->lookupTransform("camera_3","base",this->get_clock()->now(),tf2::durationFromSec(0.2));
+            } else {
+                RCLCPP_ERROR(this->get_logger(), "base_tracker_cb: Unable to transform from camera_3 to base");
+                return;
+            }
+
+            RCLCPP_INFO(this->get_logger(), "base_tracker_cb: camera 2 x: %g y: %g",camera_2_transform.transform.translation.x,camera_2_transform.transform.translation.y);
+
+            //Get angles for both cameras 
+            double camera_2_angle, camera_3_angle;
+            camera_2_angle = normalize_angle_signed(std::atan2(camera_2_transform.transform.translation.y,camera_2_transform.transform.translation.x));
+            camera_3_angle = normalize_angle_signed(std::atan2(camera_3_transform.transform.translation.y,camera_3_transform.transform.translation.x));
+
+            double camera_2_z_angle, camera_3_z_angle, camera_2_dist, camera_3_dist;
+            camera_2_dist = dist(camera_2_transform.transform.translation.x,camera_2_transform.transform.translation.y);
+            camera_3_dist = dist(camera_3_transform.transform.translation.x,camera_3_transform.transform.translation.y);
+            //Using fixed z
+            camera_2_z_angle = normalize_angle_signed(std::atan2(-1.0, camera_2_dist));
+            camera_3_z_angle = normalize_angle_signed(std::atan2(-1.0, camera_3_dist));
+            RCLCPP_INFO(this->get_logger(), "base_tracker_cb: camera 2 dist: %g camera 3 dist: %g",camera_2_dist,camera_3_dist);
+            RCLCPP_INFO(this->get_logger(), "base_tracker_cb: camera 2 angle: %g camera 3 angle: %g",camera_2_angle*180/M_PI,camera_3_angle*180/M_PI);
+            RCLCPP_INFO(this->get_logger(), "base_tracker_cb: camera 2 z angle: %g camera 3 z angle: %g",camera_2_z_angle*180/M_PI,camera_3_z_angle*180/M_PI);
+
+            int state;
+            if (use_pull_state){
+                state = pull_state;
+            } else {
+                state = dur_state;
+            }
+
+            //Populate messages
+            camera_2_msg.control_mode = 2;
+            camera_2_msg.pan_pos_cmd = camera_2_angle*180/M_PI;
+            camera_2_msg.pan_speed_cmd = 0.;
+            camera_2_msg.tilt_pos_cmd = camera_2_z_angle*180/M_PI;
+            camera_2_msg.tilt_speed_cmd = 0.;
+
+            camera_3_msg.control_mode = 4;
+            camera_3_msg.pan_pos_cmd = camera_3_angle*180/M_PI;
+            camera_3_msg.pan_speed_cmd = 0.;
+            camera_3_msg.tilt_pos_cmd = camera_3_z_angle*180/M_PI;
+            camera_3_msg.tilt_speed_cmd = 0.;
+
+            //Set zoom cmds
+            if (state == 1){
+                //Running
+                camera_2_msg.zoom_pos_cmd = camera_2_dist*zoom_scaler;
+                camera_3_msg.zoom_pos_cmd = camera_3_dist*zoom_scaler;
+            } else if (state == 3){
+                //Resetting
+                camera_2_msg.zoom_pos_cmd = 0.;
+                camera_3_msg.zoom_pos_cmd = 0.;
+            } else {
+                //Stopping or other
+                //Use last, don't set
+            }
+
+            camera_2_msg.zoom_pos_cmd = std::max(std::min(camera_2_dist*zoom_scaler,100.0),0.);
+            camera_3_msg.zoom_pos_cmd = std::max(std::min(camera_3_dist*zoom_scaler,100.0),0.);
+
+            //Publish camera messages
+            camera_2_pub->publish(camera_2_msg);
+            camera_3_pub->publish(camera_3_msg);
+
+            //Publish obs scene message
+            std_msgs::msg::String obs_scene_msg;
+            if (camera_number == 2){
+                obs_scene_msg.data = "high_track";
+            } else if (camera_number == 3){
+                obs_scene_msg.data = "low_track";
+            } else {
+                //Default
+                obs_scene_msg.data = "high_track";
+            }
+            obs_scene_pub->publish(obs_scene_msg);
         }
-
-        //Get transforms for camera 2 and camera 3 to base
-        geometry_msgs::msg::TransformStamped camera_2_transform;
-        if (tf_buffer_->canTransform("camera_2","base",this->get_clock()->now(),tf2::durationFromSec(0.2))){
-            camera_2_transform = tf_buffer_->lookupTransform("camera_2","base",this->get_clock()->now(),tf2::durationFromSec(0.2));
-        } else {
-            RCLCPP_ERROR(this->get_logger(), "base_tracker_cb: Unable to transform from camera_2 to base");
-            return;
-        }
-        geometry_msgs::msg::TransformStamped camera_3_transform;
-        if (tf_buffer_->canTransform("camera_3","base",this->get_clock()->now(),tf2::durationFromSec(0.2))){
-            camera_3_transform = tf_buffer_->lookupTransform("camera_3","base",this->get_clock()->now(),tf2::durationFromSec(0.2));
-        } else {
-            RCLCPP_ERROR(this->get_logger(), "base_tracker_cb: Unable to transform from camera_3 to base");
-            return;
-        }
-
-        RCLCPP_INFO(this->get_logger(), "base_tracker_cb: camera 2 x: %g y: %g",camera_2_transform.transform.translation.x,camera_2_transform.transform.translation.y);
-
-        //Get angles for both cameras 
-        double camera_2_angle, camera_3_angle;
-        camera_2_angle = normalize_angle_signed(std::atan2(camera_2_transform.transform.translation.y,camera_2_transform.transform.translation.x));
-        camera_3_angle = normalize_angle_signed(std::atan2(camera_3_transform.transform.translation.y,camera_3_transform.transform.translation.x));
-
-        double camera_2_z_angle, camera_3_z_angle, camera_2_dist, camera_3_dist;
-        camera_2_dist = dist(camera_2_transform.transform.translation.x,camera_2_transform.transform.translation.y);
-        camera_3_dist = dist(camera_3_transform.transform.translation.x,camera_3_transform.transform.translation.y);
-        //Using fixed z
-        camera_2_z_angle = normalize_angle_signed(std::atan2(-1.0, camera_2_dist));
-        camera_3_z_angle = normalize_angle_signed(std::atan2(-1.0, camera_3_dist));
-        RCLCPP_INFO(this->get_logger(), "base_tracker_cb: camera 2 dist: %g camera 3 dist: %g",camera_2_dist,camera_3_dist);
-        RCLCPP_INFO(this->get_logger(), "base_tracker_cb: camera 2 angle: %g camera 3 angle: %g",camera_2_angle*180/M_PI,camera_3_angle*180/M_PI);
-        RCLCPP_INFO(this->get_logger(), "base_tracker_cb: camera 2 z angle: %g camera 3 z angle: %g",camera_2_z_angle*180/M_PI,camera_3_z_angle*180/M_PI);
-
-        int state;
-        if (use_pull_state){
-            state = pull_state;
-        } else {
-            state = dur_state;
-        }
-
-        //Populate messages
-        camera_2_msg.pan_pos_cmd = camera_2_angle;
-        camera_2_msg.pan_speed_cmd = 0.;
-        camera_2_msg.tilt_pos_cmd = camera_2_z_angle;
-        camera_2_msg.tilt_speed_cmd = 0.;
-
-        camera_3_msg.pan_pos_cmd = camera_3_angle;
-        camera_3_msg.pan_speed_cmd = 0.;
-        camera_3_msg.tilt_pos_cmd = camera_3_z_angle;
-        camera_3_msg.tilt_speed_cmd = 0.;
-
-        //Set zoom cmds
-        if (state == 1){
-            //Running
-            camera_2_msg.zoom_pos_cmd = camera_2_dist*zoom_scaler;
-            camera_3_msg.zoom_pos_cmd = camera_3_dist*zoom_scaler;
-        } else if (state == 3){
-            //Resetting
-            camera_2_msg.zoom_pos_cmd = 0.;
-            camera_3_msg.zoom_pos_cmd = 0.;
-        } else {
-            //Stopping or other
-            //Use last, don't set
-        }
-
-        //Publish camera messages
-        camera_2_pub->publish(camera_2_msg);
-        camera_3_pub->publish(camera_3_msg);
-
-        //Publish obs scene message
-        std_msgs::msg::String obs_scene_msg;
-        if (camera_number == 2){
-            obs_scene_msg.data = "high_track";
-        } else if (camera_number == 3){
-            obs_scene_msg.data = "low_track";
-        } else {
-            //Default
-            obs_scene_msg.data = "high_track";
-        }
-        obs_scene_pub->publish(obs_scene_msg);
     }
 
     //Subscribers
     rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr pull_state_sub;
     rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr dur_state_sub;
+    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub;
 
     //Publishers
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr obs_scene_pub;
@@ -237,6 +296,11 @@ private:
 
     iqs_msgs::msg::Camera camera_2_msg;
     iqs_msgs::msg::Camera camera_3_msg;
+
+    sensor_msgs::msg::Joy joy_msg;
+
+    bool use_joy;
+    int joy_camera;
 };
 
 int main(int argc, char** argv) {
