@@ -40,8 +40,8 @@ class camera():
         while True:
             if self.control_mode==2:
                 self.position_controller(self.closed_pan_goal,self.closed_tilt_goal)
-                #print(self.closed_pan_goal)
-                time.sleep(.1)
+                ##print(self.closed_pan_goal)
+                time.sleep(.01)
 
     def ser_listener(self):
         while True:
@@ -53,30 +53,30 @@ class camera():
         #self.server_socket.bind(('192.168.100.180', 54571))
         #self.server_socket.listen(1)
         #self.socket.listen(1)
-        print("starting loop")
+        #print("starting loop")
         """while True:
             client_socket, client_address = self.server_socket.accept()
-            print(f"connection from {client_address}")
+            #print(f"connection from {client_address}")
             if client_address==self.camera_ip:
                 break
             client_socket.close()
         """
-        print("connected")
+        #print("connected")
         while True:
             data=self.socket.recv(1024)
-            #print("rcv")
-            print(data.hex())
-            #self.visca_recieve(data.hex())
+            ##print("rcv")
+            #print(data.hex())
+            self.visca_recieve(data.hex())
             if not data:
                 break
         
     def visca_recieve(self,data):
-        print(data)
+        #print(data)
         try:
             if data[0]=="9" and data[1]=="0" and data[2]=="5" and data[3]=="0" and len(data)==22:
                 pan_str=f"{data[5]}{data[7]}{data[9]}{data[11]}"
                 pan=int(pan_str,16)
-                print(f"pan raw: {pan}")
+                #print(f"pan raw: {pan}")
                 if pan & (1 << (len(pan_str) * 4 - 1)):
                     # Perform two's complement conversion
                     pan = pan - (1 << (len(pan_str) * 4))
@@ -88,15 +88,16 @@ class camera():
                     tilt = tilt - (1 << (len(tilt_str) * 4))
                 self.tilt=tilt/(1296/90)
                 self.pan_position=self.pan
-                #print(f"Pos Pan:{self.pan} Tilt:{self.tilt}")
+                ##print(f"Pos Pan:{self.pan} Tilt:{self.tilt}")
             elif data[0]=="9" and data[1]=="0" and data[2]=="5" and data[3]=="0" and len(data)==14:
                 zoom_str=f"{data[5]}{data[7]}{data[9]}{data[11]}"
                 zoom=int(zoom_str,16)
                 zoom=100*zoom/16384
-                #print(f"zoom pos: {zoom}")
+                ##print(f"zoom pos: {zoom}")
                 self.zoom=zoom
         except Exception as E:
-            print(E)
+            #print(E)
+            pass
         
         
 
@@ -116,7 +117,7 @@ class camera():
             #     self.visca_recieve(additional_data.hex())
             # else:
             #     additional_data = None
-            # #print(cmd_str)
+            # ##print(cmd_str)
             command=bytes.fromhex(cmd_str)
             while True:
                 if self.cam_ser.is_open:
@@ -134,7 +135,7 @@ class camera():
         if self.type==1:
             cmd_str=cmd_str.replace(" ", "")
             #cmd_str='8101043F0201FF'
-            #print(cmd_str)
+            ##print(cmd_str)
             data=bytes.fromhex(cmd_str)
             self.socket.send(data)
     
@@ -165,9 +166,9 @@ class camera():
 
 
         command=f"8{self.address} 01 06 01 {format(pan_speed, '02x')} {format(tilt_speed, '02x')} 0{pc} 0{tc} FF"
-        #print(command)
+        ##print(command)
         result=self.send_cmd(command)
-        #print(result)
+        ##print(result)
     
     def abs_pos(self,pan_speed,pan_pos,tilt_pos):
         tilt_pos=tilt_pos*-1
@@ -176,7 +177,7 @@ class camera():
 
         pan_pos_cmd=hex(pan_pos_cmd)[2:].zfill(5)
         tilt_pos_cmd=hex(tilt_pos_cmd)[2:].zfill(4)
-        print(f"pan: {pan_pos} tilt: {tilt_pos} pan: {pan_pos_cmd} tilt: {tilt_pos_cmd}")
+        #print(f"pan: {pan_pos} tilt: {tilt_pos} pan: {pan_pos_cmd} tilt: {tilt_pos_cmd}")
 
         pan_pos_cmd=list(pan_pos_cmd)
         tilt_pos_cmd=list(tilt_pos_cmd)
@@ -184,7 +185,7 @@ class camera():
         tilt_speed=10
         command=f"8{self.address} 01 06 02 {format(pan_speed, '02x')} {format(tilt_speed, '02x')} 0{pan_pos_cmd[0]} 0{pan_pos_cmd[1]} 0{pan_pos_cmd[2]} 0{pan_pos_cmd[3]} 0{tilt_pos_cmd[0]} 0{tilt_pos_cmd[1]} 0{tilt_pos_cmd[2]} 0{tilt_pos_cmd[3]} FF"
         #81 01 06 02 VV WW 0Y 0Y 0Y 0Y 0Z 0Z 0Z 0Z FF
-        #print(command)
+        ##print(command)
         self.send_cmd(command)
     
     def zoom_pos(self,zoom_pos_cmd):
@@ -192,7 +193,7 @@ class camera():
         ##input zoom 1-100 float
 
         zoom=int(zoom_pos_cmd*(16384/100))
-        #print(zoom)
+        ##print(zoom)
         zoom=list(hex(zoom)[2:].zfill(4))
         command=f"8{self.address} 01 04 47 0{zoom[0]} 0{zoom[1]} 0{zoom[2]} 0{zoom[3]} FF"
         self.send_cmd(command)
@@ -200,22 +201,22 @@ class camera():
     def position_controller(self,pan_goal,tilt_goal):
         self.pos_query()
         self.zoom_query()
-        pan_cmd=min(max(int((pan_goal-self.pan_position)*.5),-18),18)
+        pan_cmd=min(max(int((pan_goal-self.pan_position)*1),-18),18)
         tilt_cmd=min(max(int((tilt_goal-self.tilt)*.5),-18),18)
-        #print(f"goals: pan:{pan_goal} tilt:{tilt_goal}")
-        print(f"cmds pan:{pan_cmd} tilt:{tilt_cmd} goals: pan:{pan_goal} tilt:{tilt_goal} pan:{self.pan_position} tilt:{self.tilt}" )
+        ##print(f"goals: pan:{pan_goal} tilt:{tilt_goal}")
+        # #print(f"cmds pan:{pan_cmd} tilt:{tilt_cmd} goals: pan:{pan_goal} tilt:{tilt_goal} pan:{self.pan_position} tilt:{self.tilt}" )
         self.move(pan_cmd,tilt_cmd)
         
         #self.zoom_pos(self.closed_zoom_goal)
 
         dz=self.closed_zoom_goal-self.zoom
-        print(dz)
+        # #print(dz)
         if abs(dz) < 10:
             self.zoom_speed(0)
         else:
             command=dz
             self.zoom_speed(int(max(-7,min(7,command))))
-        #print(f"Pan:{self.pan} tilt:{self.tilt} cmds: pan:{pan_cmd} tilt:{tilt_cmd}")
+        ##print(f"Pan:{self.pan} tilt:{self.tilt} cmds: pan:{pan_cmd} tilt:{tilt_cmd}")
         
 
     def zoom_speed(self,speed):
@@ -227,7 +228,7 @@ class camera():
             zc=3
         
         command=f"8{self.address} 01 04 07 {zc}{abs(speed)} FF"
-        print(abs(speed))
+        #print(abs(speed))
         self.send_cmd(command)
 
     def image_flip(self,on):
@@ -249,41 +250,41 @@ class camera():
         
         command=f"8{self.address} 09 06 12 FF"
         self.send_cmd(command)
-        #print(result)
+        ##print(result)
         """"matches=re.findall(r'\\x([a-fA-F0-9]+)',str(result))
         if len(matches)>6:
             pan_nums=matches[1][1]+matches[2][1]+matches[3][1]+matches[4][1]+matches[5][1]
         else:
             return
         pan_value=int(pan_nums,20)
-        #print(pan_value)
-        #print(pan_nums)
-        #print(matches)
+        ##print(pan_value)
+        ##print(pan_nums)
+        ##print(matches)
         """
-    # def parse(self,data):
+    def parse(self,data):
 
-    #     matches=re.findall(r'\\x([a-fA-S0-9]+)',str(data))
-    #     start=0
-    #     responses=[]
-    #     for i in range(len(matches)):
-    #         if matches[i]=='ff':
-    #             responses.append(matches[start:i+1])
-    #             start=i+1
-    #     #print(responses)
-    #     for response in responses:
-    #         if response[0]=='90P' and len(response)>6:
-    #             try:
-    #                 print(response)
-    #                 pan_nums=response[1][1]+response[2][1]+response[3][1]+response[4][1]+response[5][1]
-    #                 num=int(pan_nums,16)
-    #                 if num & (1 << (len(pan_nums) * 4 - 1)):
-    #                     num -= 1 << len(pan_nums) * 4
-    #                 self.pan_position=num
-    #                 #print(self.pan_position)
-    #             except:
-    #                 pass
-    #     self.responses=responses
-    #     #print(responses)
+        matches=re.findall(r'\\x([a-fA-S0-9]+)',str(data))
+        start=0
+        responses=[]
+        for i in range(len(matches)):
+            if matches[i]=='ff':
+                responses.append(matches[start:i+1])
+                start=i+1
+        ##print(responses)
+        for response in responses:
+            if response[0]=='90P' and len(response)>6:
+                try:
+                    #print(response)
+                    pan_nums=response[1][1]+response[2][1]+response[3][1]+response[4][1]+response[5][1]
+                    num=int(pan_nums,16)
+                    if num & (1 << (len(pan_nums) * 4 - 1)):
+                        num -= 1 << len(pan_nums) * 4
+                    self.pan_position=num
+                    ##print(self.pan_position)
+                except:
+                    pass
+        self.responses=responses
+        ##print(responses)
     def exposure_set(self):
         command=f"8{self.address} 01 04 39 00 FF"
         
@@ -309,7 +310,7 @@ if __name__=="__main__":
     #time.sleep(1)
     #cam.move(-18,0)
     #time.sleep(10)
-    print("Starting")
+    #print("Starting")
     #cam.move(1,1)
     """while abs(i)<=18:
         start=time.time()
@@ -319,9 +320,9 @@ if __name__=="__main__":
             time.sleep(.01)
         end=time.time()
         speeds.append(360/(end-start))
-        print(speeds)
+        #print(speeds)
         i=int((abs(i)-1)*-1*(i/abs(i)))
-        print(i)
+        #print(i)
         #cam.pos_query()
         #time.sleep(.1)
         #cam.abs_pos(18,18,90,-30)S
@@ -331,7 +332,7 @@ if __name__=="__main__":
         #cam.set_white_balance(0)
         #cam.abs_pos(18,18,10,0.0)
         time.sleep(1)
-    print(speeds)
+    #print(speeds)
     """
     #cam.abs_pos(18,0,0)
 
@@ -340,19 +341,19 @@ if __name__=="__main__":
     cam.move(8,8)
     while True:
         cam.pos_query()
-        #print(cam.pan_position)
+        ##print(cam.pan_position)
     #cam.zoom_pos(60)
     #time.sleep(1)
     #cam.move(-6,6)
     # cam.pos_query()
     # time.sleep(1)
-    # print(cam.pan_position)
+    # #print(cam.pan_position)
     # while True:
     #     cam.position_controller(0.0,0.0)
     #     time.sleep(.5)
     # for i in range(0,100):
     #     cam.pos_query()
-    #     print(cam.pan)
+    #     #print(cam.pan)
     #     cam.abs_pos(18,i/10.0,0)
     #     time.sleep(.03)
     #cam.zoom_pos(100)
@@ -377,7 +378,7 @@ if __name__=="__main__":
     #     for i in range(0,18):
     #         cam.move(-1*i,-1*i)
     #         time.sleep(.1)
-    #         print("loop")
+    #         #print("loop")
     # #cam.zoom(-7)
     #cam.exposure_set()
     #cam.focus_mode_set()
