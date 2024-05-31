@@ -146,13 +146,16 @@ class MyNode(Node):
         """
         cam_id=int(id)
         self.cams[cam_id].visca_obj.control_mode=msg.control_mode
-        self.cams[cam_id].tilt_pos_cmd=msg.tilt_pos_cmd
-        self.cams[cam_id].pan_pos_cmd=msg.pan_pos_cmd
-        self.cams[cam_id].visca_obj.closed_pan_goal=msg.pan_pos_cmd
+        self.cams[cam_id].tilt_pos_cmd=msg.tilt_pos_cmd #not doing anything
+        self.cams[cam_id].pan_pos_cmd=msg.pan_pos_cmd #not doing anything
+        # self.cams[cam_id].visca_obj.closed_pan_goal=0.0
+        self.cams[cam_id].visca_obj.closed_pan_goal=-msg.pan_pos_cmd
+        # self.cams[cam_id].visca_obj.closed_tilt_goal=0.0
         self.cams[cam_id].visca_obj.closed_tilt_goal=msg.tilt_pos_cmd
         self.cams[cam_id].zoom_pos_cmd=msg.zoom_pos_cmd
         self.cams[cam_id].pan_speed_cmd=msg.pan_speed_cmd
         self.cams[cam_id].tilt_speed_cmd=msg.tilt_speed_cmd
+
         if msg.control_mode==0:
             pass
         elif msg.control_mode==1:
@@ -162,12 +165,26 @@ class MyNode(Node):
                 self.cams[cam_id].visca_obj.zoom_speed(int(msg.zoom_speed_cmd*7))
             pass
         elif msg.control_mode ==2:
-            pass
+            # if self.cams[cam_id].visca_obj.zoom < msg.zoom_pos_cmd - 5:
+            #     self.cams[cam_id].visca_obj.zoom_speed(4)
+            #     self.get_logger().info("1")
+
+            # elif self.cams[cam_id].visca_obj.zoom > msg.zoom_pos_cmd + 5:
+            #     self.cams[cam_id].visca_obj.zoom_speed(-4)
+            #     self.get_logger().info("-1")
+
+            # else:
+            #     self.cams[cam_id].visca_obj.zoom_speed(0)
+            #     self.get_logger().info("0")
+            
+            self.cams[cam_id].visca_obj.closed_zoom_goal=msg.zoom_pos_cmd
+            self.get_logger().info(f"Cam: {cam_id} Zoom {self.cams[cam_id].visca_obj.zoom} Cmd: {msg.zoom_pos_cmd}")
         elif msg.control_mode ==3:
             self.cams[cam_id].visca_obj.abs_pos(int(msg.pan_speed_cmd),msg.pan_pos_cmd,msg.tilt_pos_cmd)
             pass
         elif msg.control_mode ==4:
             pass
+
 
 def main(args=None):
     rclpy.init(args=args)
