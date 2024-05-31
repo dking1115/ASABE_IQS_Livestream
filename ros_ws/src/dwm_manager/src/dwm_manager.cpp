@@ -7,6 +7,7 @@
 #include "tf2/utils.h"
 #include <tf2/LinearMath/Transform.h>
 #include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/float32.hpp>
 
 class PointStampedSubscriber : public rclcpp::Node {
 public:
@@ -44,7 +45,7 @@ public:
         tag2_received = false;
 
         //Lap counter
-        laps = 0;
+        laps = 0.;
         lap_quadrants = {false,false,false,false};
 
         current_team = -1;
@@ -120,6 +121,7 @@ private:
             //Reset lap counter and update team
             current_team = msg->data;
             lap_quadrants = {false,false,false,false};
+            laps = 0.0;
         }
     }
 
@@ -171,34 +173,48 @@ private:
         x = transform.transform.translation.x;
         y = transform.transform.translation.y;
 
+        RCLCPP_INFO(this->get_logger(),"lap_counter_cb: x: %g y: %g",x,y);
+
         //Check quadrants in order
         if (!lap_quadrants[0]){
-            //+-
-            if(x > dist_thresh && x < -dist_thresh){
+            //--
+            RCLCPP_INFO(this->get_logger(),"lap_counter_cb: quad 0");
+            if(x < -dist_thresh && y < -dist_thresh){
                 lap_quadrants[0] = true;
             }
         } else if (!lap_quadrants[1]){
-            //--
-            if(x < -dist_thresh && x < -dist_thresh){
+            //-+
+            RCLCPP_INFO(this->get_logger(),"lap_counter_cb: quad 1");
+
+            if(x < -dist_thresh && y > dist_thresh){
                 lap_quadrants[1] = true;
+                laps += 0.25;
             }
         } else if (!lap_quadrants[2]){
-            //-+
-            if(x < -dist_thresh && x > dist_thresh){
+            //++
+            RCLCPP_INFO(this->get_logger(),"lap_counter_cb: quad 2");
+
+            if(x > dist_thresh && y > dist_thresh){
                 lap_quadrants[2] = true;
+                laps += 0.25;
             }
         } else if (!lap_quadrants[3]){
-            //++
-            if(x > dist_thresh && x > dist_thresh){
-                lap_quadrants[0] = true;
+            //+-
+            RCLCPP_INFO(this->get_logger(),"lap_counter_cb: quad 3");
+
+            if(x > dist_thresh && y < -dist_thresh){
+                lap_quadrants[3] = true;
+                laps += 0.25;
             }
         } else {
             //Wait for machine to cross back into quad 1
             //+-
-            if(x > dist_thresh && x < -dist_thresh){
+            RCLCPP_INFO(this->get_logger(),"lap_counter_cb: quad finished");
+
+            if(x < -dist_thresh && y < -dist_thresh){
                 //Lap finished, increment count
-                laps++;
                 lap_quadrants = {false,false,false,false}; 
+                laps += 0.25;
             }
         }
 
@@ -233,7 +249,7 @@ private:
     int current_team;
 
     //Lap counter
-    int laps;
+    double laps;
     //Given a tf at track center, check that all quadrants were hit before counting a lap
     std::vector<bool> lap_quadrants;
 
