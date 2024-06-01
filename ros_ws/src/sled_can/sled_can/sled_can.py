@@ -4,7 +4,6 @@ import rclpy
 from rclpy.node import Node
 from iqs_msgs.msg import Sled
 from iqs_msgs.msg import Durability
-from sled_msgs.msg import Currentpull
 import can
 
 class MyROSNode(Node):
@@ -15,13 +14,11 @@ class MyROSNode(Node):
         self.dur_pub = self.create_publisher(Durability,"durabilty",10)
         self.sled_timer=self.create_timer(.00001,self.callback_function)
         self.bus = can.Bus(channel='can0', interface='socketcan')
-        self.current_pull_pub= self.create_publisher(Currentpull,"track_state",10)
 
     def callback_function(self):
         message=self.bus.recv()
-        #print(message.arbitration_id)
+        # print(message.arbitration_id)
         # Convert the arbitration ID to a hexadecimal string
-        arbitration_id_hex = hex(message.arbitration_id)
         if message.arbitration_id==0x0CFF6507:
             #print("msg")
             self.pull_state=message.data[0]
@@ -36,16 +33,14 @@ class MyROSNode(Node):
             self.pull_state=message.data[0]
             if self.pull_state==1:
                 self.sled_pub.publish(sled)
-            current=Currentpull()
-            current.trackstate=self.pull_state
-            self.current_pull_pub.publish(current)
-        elif 'FF0A' in arbitration_id_hex: # Check if 'FF0A' is present in the hexadecimal string
-            self.dur_speed=(message.data[0]|message.data[1]<<8)
+        elif (message.arbitration_id & 0x00FFFF00)==0x00FF0100: # Check if 'FF0A' is present in the hexadecimal string
+            self.dur_speed=(message.data[0]|message.data[1]<<8)*.125*60/5280
             self.dur_drive_pressure=(message.data[2]|message.data[3]<<8)
             dur_msg=Durability()
             dur_msg.header.stamp=self.get_clock().now().to_msg()
-            dur_msg.speed=self.dur_speed
-            dur_msg.dur_drive_pressure=self.dur_drive_pressure
+            dur_msg.speed=float(self.dur_speed)
+            dur_msg.drive_pressure=float(self.dur_drive_pressure)
+            self.dur_pub.publish(dur_msg)
 
 def main(args=None):
     rclpy.init(args=args)

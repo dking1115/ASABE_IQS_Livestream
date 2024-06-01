@@ -1,0 +1,16 @@
+[Unit]
+Description=DWM Startup
+After=systemd-user-sessions.service
+
+[Service]
+Type=simple
+User=cpp_enterprises
+Group=cpp_enterprises
+ExecStartPre=/bin/sleep 15
+WorkingDirectory=/home/cpp_enterprises/iqs/
+ExecStart=/usr/bin/bash -c  "source /opt/ros/humble/setup.bash; source /home/cpp_enterprises/iqs/ros_ws/install/setup.bash; ros2 launch content_node content_node.launch.py" 
+#EnvironmentFile=/etc/balehawk_startup/balehawk_startup.conf
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -19,6 +19,13 @@ def generate_launch_description():
             output='screen',
         ),
 
+        Node(
+            package='camera',
+            executable='camera_controller',
+            parameters=[],
+            output='screen',
+        ),
+
         Node(package = "tf2_ros", 
             executable = "static_transform_publisher",
             arguments = ["0", "0", "0", "0", "0", "0", "initiator", "camera_3"]),

@@ -1,0 +1,15 @@
+[Unit]
+Description=Sled can
+After=systemd-user-sessions.service
+
+[Service]
+Type=simple
+User=cpp
+Group=cpp
+ExecStartPre=/bin/sleep 15
+WorkingDirectory=/home/cpp/iqs/
+ExecStart=/usr/bin/bash -c  "source /opt/ros/humble/setup.bash; source /home/cpp/iqs/install/setup.bash; ros2 run sled_can sled_can" 
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
