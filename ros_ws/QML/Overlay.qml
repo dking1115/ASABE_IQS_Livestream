@@ -5,20 +5,19 @@ ApplicationWindow {
     visible: true
     width: 1920
     height: 1080
-    title: "Management Console"
+    title: "Overlays"
     Rectangle{
         anchors.fill:parent
         color:"#f542e9"
     }
-    Repeater{
-        model:dataModel.overlay_obj_qt
+    
         Loader{
         anchors.fill:parent
-        source:modelData.path
-        enabled:modelData.enabled
+        source:"Durability.qml"
+        enabled:true
         //onLoaded: Console.log(modelData.path)
     }
-    }
+    
     
 
 }

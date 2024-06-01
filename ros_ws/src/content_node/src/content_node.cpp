@@ -54,7 +54,7 @@ public:
         camera_3_msg.zoom_pos_cmd = 0.;
 
         //Set zoom scaler 
-        zoom_scaler = 1.25;
+        zoom_scaler = 1.5;
 
         //Default use pull state
         //Updates dependent on the state callback it gets
@@ -140,8 +140,8 @@ private:
             //Use to choose which camera
             //Get transform from track center to base
             geometry_msgs::msg::TransformStamped transform;
-            if (tf_buffer_->canTransform("track_center","base",this->get_clock()->now(),tf2::durationFromSec(0.2))){
-                transform = tf_buffer_->lookupTransform("track_center","base",this->get_clock()->now(),tf2::durationFromSec(0.2));
+            if (tf_buffer_->canTransform("track_center","base",this->get_clock()->now(),tf2::durationFromSec(0.5))){
+                transform = tf_buffer_->lookupTransform("track_center","base",this->get_clock()->now(),tf2::durationFromSec(0.5));
             } else {
                 RCLCPP_ERROR(this->get_logger(), "base_tracker_cb: Unable to transform from track_center to base");
                 return;
@@ -175,15 +175,15 @@ private:
 
             //Get transforms for camera 2 and camera 3 to base
             geometry_msgs::msg::TransformStamped camera_2_transform;
-            if (tf_buffer_->canTransform("camera_2","base",this->get_clock()->now(),tf2::durationFromSec(0.2))){
-                camera_2_transform = tf_buffer_->lookupTransform("camera_2","base",this->get_clock()->now(),tf2::durationFromSec(0.2));
+            if (tf_buffer_->canTransform("camera_2","base",this->get_clock()->now(),tf2::durationFromSec(0.5))){
+                camera_2_transform = tf_buffer_->lookupTransform("camera_2","base",this->get_clock()->now(),tf2::durationFromSec(0.5));
             } else {
                 RCLCPP_ERROR(this->get_logger(), "base_tracker_cb: Unable to transform from camera_2 to base");
                 return;
             }
             geometry_msgs::msg::TransformStamped camera_3_transform;
-            if (tf_buffer_->canTransform("camera_3","base",this->get_clock()->now(),tf2::durationFromSec(0.2))){
-                camera_3_transform = tf_buffer_->lookupTransform("camera_3","base",this->get_clock()->now(),tf2::durationFromSec(0.2));
+            if (tf_buffer_->canTransform("camera_3","base",this->get_clock()->now(),tf2::durationFromSec(0.5))){
+                camera_3_transform = tf_buffer_->lookupTransform("camera_3","base",this->get_clock()->now(),tf2::durationFromSec(0.5));
             } else {
                 RCLCPP_ERROR(this->get_logger(), "base_tracker_cb: Unable to transform from camera_3 to base");
                 return;
@@ -200,8 +200,8 @@ private:
             camera_2_dist = dist(camera_2_transform.transform.translation.x,camera_2_transform.transform.translation.y);
             camera_3_dist = dist(camera_3_transform.transform.translation.x,camera_3_transform.transform.translation.y);
             //Using fixed z
-            camera_2_z_angle = normalize_angle_signed(std::atan2(-1.0, camera_2_dist));
-            camera_3_z_angle = normalize_angle_signed(std::atan2(-1.0, camera_3_dist));
+            camera_2_z_angle = normalize_angle_signed(std::atan2(-2.0, camera_2_dist));
+            camera_3_z_angle = normalize_angle_signed(std::atan2(-2.0, camera_3_dist));
             RCLCPP_INFO(this->get_logger(), "base_tracker_cb: camera 2 dist: %g camera 3 dist: %g",camera_2_dist,camera_3_dist);
             RCLCPP_INFO(this->get_logger(), "base_tracker_cb: camera 2 angle: %g camera 3 angle: %g",camera_2_angle*180/M_PI,camera_3_angle*180/M_PI);
             RCLCPP_INFO(this->get_logger(), "base_tracker_cb: camera 2 z angle: %g camera 3 z angle: %g",camera_2_z_angle*180/M_PI,camera_3_z_angle*180/M_PI);

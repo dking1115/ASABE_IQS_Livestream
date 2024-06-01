@@ -24,6 +24,6 @@ def generate_launch_description():
             arguments = ["0", "0", "0", "0", "0", "0", "initiator", "camera_3"]),
         Node(package = "tf2_ros", 
             executable = "static_transform_publisher",
-            arguments = ["0", "34.", "0", "0", "0", "0", "initiator", "camera_2"]),
+            arguments = ["0", "34.", "0", "0.087", "0", "0", "initiator", "camera_2"]),
 
     ])

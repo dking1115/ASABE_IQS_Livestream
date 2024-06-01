@@ -3,6 +3,7 @@
 import rclpy
 from rclpy.node import Node
 from iqs_msgs.msg import Sled
+from iqs_msgs.msg import Durability
 from sled_msgs.msg import Currentpull
 import can
 
@@ -11,6 +12,7 @@ class MyROSNode(Node):
         super().__init__('my_ros_node')
         self.get_logger().info("My ROS 2 Node is running!")
         self.sled_pub = self.create_publisher(Sled,"sled",10)
+        self.dur_pub = self.create_publisher(Durability,"durabilty",10)
         self.sled_timer=self.create_timer(.00001,self.callback_function)
         self.bus = can.Bus(channel='can0', interface='socketcan')
         self.current_pull_pub= self.create_publisher(Currentpull,"track_state",10)
@@ -18,6 +20,8 @@ class MyROSNode(Node):
     def callback_function(self):
         message=self.bus.recv()
         #print(message.arbitration_id)
+        # Convert the arbitration ID to a hexadecimal string
+        arbitration_id_hex = hex(message.arbitration_id)
         if message.arbitration_id==0x0CFF6507:
             #print("msg")
             self.pull_state=message.data[0]
@@ -35,6 +39,13 @@ class MyROSNode(Node):
             current=Currentpull()
             current.trackstate=self.pull_state
             self.current_pull_pub.publish(current)
+        elif 'FF0A' in arbitration_id_hex: # Check if 'FF0A' is present in the hexadecimal string
+            self.dur_speed=(message.data[0]|message.data[1]<<8)
+            self.dur_drive_pressure=(message.data[2]|message.data[3]<<8)
+            dur_msg=Durability()
+            dur_msg.header.stamp=self.get_clock().now().to_msg()
+            dur_msg.speed=self.dur_speed
+            dur_msg.dur_drive_pressure=self.dur_drive_pressure
 
 def main(args=None):
     rclpy.init(args=args)

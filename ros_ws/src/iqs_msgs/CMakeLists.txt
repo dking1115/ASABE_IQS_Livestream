@@ -22,6 +22,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Camera.msg"
   "msg/OverlayObj.msg"
   "msg/OverlayArray.msg"
+  "msg/Durability.msg"
   DEPENDENCIES
   geometry_msgs
   #iqs_msgs

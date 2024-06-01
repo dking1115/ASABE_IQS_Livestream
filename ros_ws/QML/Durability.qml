@@ -49,7 +49,7 @@ Item {
             width: 262
             height: 50
             color: "#ffffff"
-            text: qsTr("3.58 mph")
+            text: qsTr(dataModel.speed+" mph")
             font.pixelSize: 41
             horizontalAlignment: Text.AlignRight
             font.styleName: "Bold"
