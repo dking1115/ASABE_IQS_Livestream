@@ -22,25 +22,25 @@ Item {
             width: 480
             height: 50
             color: "#ffffff"
-            text: qsTr("Nebraska")
+            text: dataModel.run_qml.team_name
             font.pixelSize: 41
             font.styleName: "Bold"
             font.family: "Verdana"
         }
 
-        Text {
-            id: text6
-            x: 685
-            y: 99
-            width: 232
-            height: 48
-            color: "#ffffff"
-            text: qsTr("2000 hp")
-            font.pixelSize: 41
-            horizontalAlignment: Text.AlignRight
-            font.styleName: "Bold"
-            font.family: "Verdana"
-        }
+        // Text {
+        //     id: text6
+        //     x: 685
+        //     y: 99
+        //     width: 232
+        //     height: 48
+        //     color: "#ffffff"
+        //     text: qsTr("2000 hp")
+        //     font.pixelSize: 41
+        //     horizontalAlignment: Text.AlignRight
+        //     font.styleName: "Bold"
+        //     font.family: "Verdana"
+        // }
 
         Text {
             id: text8
@@ -49,7 +49,7 @@ Item {
             width: 262
             height: 50
             color: "#ffffff"
-            text: qsTr(dataModel.speed+" mph")
+            text: qsTr(dataModel.load_toad.speed+" mph")
             font.pixelSize: 41
             horizontalAlignment: Text.AlignRight
             font.styleName: "Bold"
@@ -61,7 +61,7 @@ Item {
             x: 27
             y: 73
             color: "#ffffff"
-            text: qsTr("Laps 10")
+            text: "Laps "+dataModel.run_qml.laps
             font.pixelSize: 61
             font.styleName: "Bold"
             font.family: "Verdana"
@@ -73,7 +73,7 @@ Item {
             y: 4
             width: 387
             height: 163
-            source: "../../../Downloads/ASABE-IQS-logo-white.png"
+            source: "images/ASABE-IQS-logo-white.png"
             fillMode: Image.PreserveAspectFit
         }
     }
@@ -85,7 +85,7 @@ Item {
         width: 232
         height: 75
         color: "#ffffff"
-        text: qsTr("20:00")
+        text: dataModel.run_qml.mins.toFixed(0)+":"+dataModel.run_qml.secs.toFixed(0)
         font.pixelSize: 61
         horizontalAlignment: Text.AlignHCenter
         font.styleName: "Bold"

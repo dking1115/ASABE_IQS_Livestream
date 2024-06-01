@@ -5,6 +5,8 @@ from PyQt5.QtQml import QQmlApplicationEngine
 import rclpy
 from iqs_msgs.msg import Durability
 from threading import Thread
+from std_msgs.msg import String, Float32,Int16
+import time
 #from unified_backend.data_model import DataModel
 rclpy.init()
 node = rclpy.create_node("Overlays")
@@ -23,16 +25,47 @@ class overlay_data(QObject):
     
     overlays_changed=pyqtSignal()
     load_changed=pyqtSignal()
+    run_changed=pyqtSignal()
     def __init__(self):
         print("Backend active")
         super().__init__()
+        self.run={}
+        self.num=0
+        self.run["start_time"]=time.time()
         self.toad_sub=node.create_subscription(Durability,"durability",self.load_toad_callback,10)
+        self.team_sub=node.create_subscription(String,"team_name",self.team_callback,10)
+        self.lap_sub=node.create_subscription(Float32,"durability_laps",self.lap_callback,10)
+        self.current_callback=node.create_subscription(Int16,"current_durability",self.start_run,10)
+        self.timer=node.create_timer(1.0,self.timer_callback)
         self.thread()
+        
     
     @pyqtProperty(QVariant,notify=load_changed)
     def load_toad(self):
         return self.load_toad_obj
     
+    @pyqtProperty(QVariant,notify=run_changed)
+    def run_qml(self):
+        return self.run
+    
+    def timer_callback(self):
+        self.run["mins"]=19-((time.time()-self.run["start_time"])/60)
+        self.run["secs"]=60-((time.time()-self.run["start_time"])%60)
+        self.run_changed.emit()
+
+    def start_run(self,msg):
+        if self.num!=msg.data:
+            self.run["start_time"]=time.time()
+            self.run_changed.emit
+
+    def team_callback(self,msg):
+        self.run["team_name"]=msg.data
+        self.run_changed.emit()
+
+    def lap_callback(self,msg):
+        self.run["laps"]=msg.data
+        self.run_changed.emit()
+
     def load_toad_callback(self,msg):
         self.load_toad_obj={}
         self.load_toad_obj["Pressure"]=msg.drive_pressure
