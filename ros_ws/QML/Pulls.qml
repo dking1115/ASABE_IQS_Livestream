@@ -20,7 +20,7 @@ Item {
             width: 480
             height: 50
             color: "#ffffff"
-            text: qsTr("Nebraska")
+            text: dataModel.run_qml.team_name
             font.pixelSize: 41
             font.styleName: "Bold"
             font.family: "Verdana"
@@ -33,7 +33,7 @@ Item {
             width: 232
             height: 48
             color: "#ffffff"
-            text: qsTr("2000 lbf")
+            text: dataModel.sled_obj_qt.force.toFixed(0) + " lbf"
             font.pixelSize: 41
             horizontalAlignment: Text.AlignRight
             font.styleName: "Bold"
@@ -47,7 +47,7 @@ Item {
             width: 262
             height: 50
             color: "#ffffff"
-            text: qsTr("3.58 mph")
+            text: dataModel.sled_obj_qt.speed.toFixed(2)+" mph"
             font.pixelSize: 41
             horizontalAlignment: Text.AlignRight
             font.styleName: "Bold"
@@ -59,7 +59,7 @@ Item {
             x: 27
             y: 73
             color: "#ffffff"
-            text: qsTr("132.75 ft")
+            text: dataModel.sled_obj_qt.dist.toFixed(2) + " ft"
             font.pixelSize: 61
             font.styleName: "Bold"
             font.family: "Verdana"

@@ -13,7 +13,7 @@ ApplicationWindow {
     
         Loader{
         anchors.fill:parent
-        source:"Durability.qml"
+        source:"Pulls.qml"
         enabled:true
         //onLoaded: Console.log(modelData.path)
     }
