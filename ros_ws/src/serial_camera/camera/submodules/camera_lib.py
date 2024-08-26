@@ -1,10 +1,14 @@
+import serial
 import sys
 import time
 import re
 import socket
 import threading
 class camera():
-    def __init__(self,ip_addr,port):
+    def __init__(self,com_port,ip_addr,port):
+        if com_port:
+            self.cam_ser=serial.Serial(com_port,38400,8,"N",1,.01)
+            self.type=0
         self.address=1
         self.camera_ip=ip_addr
         self.pan_position=0
@@ -21,6 +25,10 @@ class camera():
             self.type=1
             listener=threading.Thread(target=self.ip_listening_thread)
             listener.start()
+        else:
+            self.serial_listener_thread=threading.Thread(target=self.ser_listener)
+            self.serial_listener_thread.start()
+            pass
         
         self.pos_query()
         self.position_thread=threading.Thread(target=self.position_controller_thread)
@@ -34,6 +42,11 @@ class camera():
                 self.position_controller(self.closed_pan_goal,self.closed_tilt_goal)
                 ##print(self.closed_pan_goal)
                 time.sleep(.01)
+
+    def ser_listener(self):
+        while True:
+            data=self.cam_ser.read_until(b"ff")
+            self.visca_recieve(data.hex())
     
     def ip_listening_thread(self):
         #self.server_socket=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
