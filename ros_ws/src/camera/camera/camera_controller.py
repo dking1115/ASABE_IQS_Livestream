@@ -49,7 +49,6 @@ class MyNode(Node):
         super().__init__('camera_controller')
         db,cursor =cursor_connection()
         self.get_logger().info('camera controller startup')
-
         sql="SELECT camera_id, ip, port, com_port,x,y,z,yaw FROM camera_settings"
         cursor.execute(sql)
         result=cursor.fetchall()
@@ -92,25 +91,11 @@ class MyNode(Node):
             cmd=msg.zoom_speed_cmd
             if int(msg.zoom_speed_cmd*7) != 0 or self.cams[cam_id].pzoom!=0:
                 self.cams[cam_id].visca_obj.zoom_speed(int(msg.zoom_speed_cmd*7))
-            pass
         elif msg.control_mode ==2:
-            # if self.cams[cam_id].visca_obj.zoom < msg.zoom_pos_cmd - 5:
-            #     self.cams[cam_id].visca_obj.zoom_speed(4)
-            #     self.get_logger().info("1")
-
-            # elif self.cams[cam_id].visca_obj.zoom > msg.zoom_pos_cmd + 5:
-            #     self.cams[cam_id].visca_obj.zoom_speed(-4)
-            #     self.get_logger().info("-1")
-
-            # else:
-            #     self.cams[cam_id].visca_obj.zoom_speed(0)
-            #     self.get_logger().info("0")
-            
             self.cams[cam_id].visca_obj.closed_zoom_goal=msg.zoom_pos_cmd
             self.get_logger().info(f"Cam: {cam_id} Zoom {self.cams[cam_id].visca_obj.zoom} Cmd: {msg.zoom_pos_cmd}")
         elif msg.control_mode ==3:
             self.cams[cam_id].visca_obj.abs_pos(int(msg.pan_speed_cmd),msg.pan_pos_cmd,msg.tilt_pos_cmd)
-            pass
         elif msg.control_mode ==4:
             pass
 
