@@ -11,6 +11,13 @@
 #include <std_msgs/msg/string.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 
+class TrackState {
+    public:
+        int test=0;
+};
+
+
+
 class ContentNode : public rclcpp::Node {
 public:
     ContentNode() : Node("content_node") {
