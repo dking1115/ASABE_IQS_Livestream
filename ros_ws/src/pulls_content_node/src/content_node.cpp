@@ -16,11 +16,21 @@ class TrackState {
         int test=0;
 };
 
+class Zone {
+    public:
+        int max=1;
+        int min=0;
+};
 
+class State {
+    public:
+        std::vector<int> camera_target={0};
+        std::vector<int> camera_target_data={0};
+};
 
 class ContentNode : public rclcpp::Node {
 public:
-    ContentNode() : Node("content_node") {
+    ContentNode() : Node("content_node",rclcpp::NodeOptions().allow_undeclared_parameters(true)) {
         // Subscribers
         pull_state_sub = this->create_subscription<std_msgs::msg::UInt8>(
             "/pull_state", 10,

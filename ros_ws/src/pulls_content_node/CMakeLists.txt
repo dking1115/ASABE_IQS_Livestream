@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(content_node)
+project(pulls_content_node)
 
 # Find dependencies
 find_package(ament_cmake REQUIRED)
