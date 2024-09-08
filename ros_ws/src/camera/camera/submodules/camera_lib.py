@@ -151,6 +151,7 @@ class camera():
         return val
 
     def move(self,pan_speed,tilt_speed):
+        print(f"move {pan_speed}")
         pc=3
         if pan_speed>0:
             pc=2
