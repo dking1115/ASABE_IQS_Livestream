@@ -1,0 +1,53 @@
+content_node:
+  ros__parameters:
+    number_of_cameras: 2
+    states:
+      1:
+        zones:
+          begining:
+            x_max: 10
+            x_min: 0
+            y_min: -20
+            y_max: 20
+
+            camera_1_target: sled
+            camera_1_target_data: 0
+            camera_2_target: tf
+            camera_2_target_data: load_toad
+
+            obs_scene: begining_of_track
+        default:
+          camera_1_target: sled
+          camera_1_target_data: 0
+          camera_2_target: tf
+          camera_2_target_data: load_toad
+          obs_scene: default
+      2:
+        zones:
+          begining:
+            x_max: 10
+            x_min: 0
+            y_min: -20
+            y_max: 20
+
+            camera_1_target: sled
+            camera_1_target_data: 0
+            camera_2_target: tf
+            camera_2_target_data: load_toad
+          end:
+            x_max: 10
+            x_min: 0
+            y_min: -20
+            y_max: 20
+
+            camera_1_target: sled
+            camera_1_target_data: 0
+            camera_2_target: tf
+            camera_2_target_data: load_toad
+
+        default:
+          camera_1_target: sled
+          camera_1_target_data: 0
+          camera_2_target: tf
+          camera_2_target_data: load_toad
+          obs_scene: default

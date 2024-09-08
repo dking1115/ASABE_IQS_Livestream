@@ -10,6 +10,8 @@
 #include <iqs_msgs/msg/camera.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <sensor_msgs/msg/joy.hpp>
+#include <algorithm>
+
 
 class TrackState {
     public:
@@ -24,20 +26,44 @@ class Zone {
 
 class State {
     public:
+        State(const std::string& name)
         std::vector<int> camera_target={0};
         std::vector<int> camera_target_data={0};
 };
 
+template<class T>
+void fetch_param(std::shared_ptr<rclcpp::Node> nh, const std::string & param_name, T & output)
+{
+    rclcpp::Parameter param;
+    if (!nh->get_parameter(param_name,param)){
+        std::ostringstream err_msg;
+        err_msg << "could not load parameter '" << param_name << "'. (namespace: " <<
+        nh->get_namespace() << ")";
+        
+    }
+    output = param.get_value<T>();
+}
+
 class ContentNode : public rclcpp::Node {
 public:
-    ContentNode() : Node("content_node",rclcpp::NodeOptions().allow_undeclared_parameters(true)) {
+    ContentNode() : Node("content_node",rclcpp::NodeOptions().allow_undeclared_parameters(true).automatically_declare_parameters_from_overrides(true)) {
+
+        //Params
+        //const std::string & param_name="states";
+        //RCLCPP_DEBUG(get_logger(), "getTopicHandles: %s", param_name.c_str());
+        
+        std::vector<std::__cxx11::basic_string<char>> states = {};
+        find_top_levels("states",1,states);
+        std::vector<State> state_objs;
+        for (auto state_str : states){
+            state_objs.push_back(State())
+        }
+
+
         // Subscribers
         pull_state_sub = this->create_subscription<std_msgs::msg::UInt8>(
             "/pull_state", 10,
             std::bind(&ContentNode::PullStateCallback, this, std::placeholders::_1));
-        dur_state_sub = this->create_subscription<std_msgs::msg::UInt8>(
-            "/dur_state", 10,
-            std::bind(&ContentNode::DurStateCallback, this, std::placeholders::_1));
         joy_sub = this->create_subscription<sensor_msgs::msg::Joy>(
             "/joy", 10,
             std::bind(&ContentNode::JoyCallback, this, std::placeholders::_1));
@@ -48,9 +74,9 @@ public:
         camera_3_pub = this->create_publisher<iqs_msgs::msg::Camera>("/Camera_3", 10);
 
         //Timer cb
-        base_tracker_timer_ = this->create_wall_timer
+        /*base_tracker_timer_ = this->create_wall_timer
             (std::chrono::milliseconds(100),std::bind(&ContentNode::base_tracker_cb, this));
-
+        */
         //For tf2_ros
         tf_buffer_ =
             std::make_unique<tf2_ros::Buffer>(this->get_clock());
@@ -87,6 +113,40 @@ private:
     double dist(double x, double y){
         return hypot(x, y);
     }
+
+    std::vector<std::string> splitStringByPeriod(const std::string& str) {
+        std::vector<std::string> result;
+        std::stringstream ss(str);
+        std::string token;
+        
+        while (std::getline(ss, token, '.')) {
+            result.push_back(token);
+        }
+
+        return result;
+    }
+
+    void find_top_levels(const std::string & param_name,int level,std::vector<std::__cxx11::basic_string<char>> & results){
+        rcl_interfaces::msg::ListParametersResult list = list_parameters({param_name}, 10);
+        for (auto prefix : list.prefixes){
+            //RCLCPP_INFO(get_logger(),"handle: %s",prefix.c_str());
+            std::vector<std::string> parts = splitStringByPeriod(prefix);
+            
+            //RCLCPP_INFO(get_logger(), "Direct parameter: %s", parts[1].c_str());
+            if (std::find(results.begin(),results.end(),parts[level])!= results.end())
+            {
+
+            }
+            else{
+                results.push_back(parts[level]);
+            }
+        }
+
+        // for (auto local_state : results){
+        //     RCLCPP_INFO(get_logger(),"State: %s",local_state.c_str());
+        // }
+    }
+
 
     double normalize_angle_signed(double angle)
     {
