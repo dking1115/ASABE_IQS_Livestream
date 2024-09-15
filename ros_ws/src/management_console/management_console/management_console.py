@@ -16,9 +16,10 @@ def main():
     print("done")
     #engine.load("file://~/iqs/ros_ws/QML/management.qml")
     #engine.load("QML/management.qml")
-    path=QUrl.fromLocalFile("file:///home/cpp_enterprises/iqs/ros_ws/QML/management.qml").path()
-    print(path)
-    engine.load(path)
+    #path=QUrl.fromLocalFile("file:QML/management.qml").path()
+    #print(path)
+    #engine.load(path)
+    engine.load("QML/management.qml")
     
     print("done")
 

@@ -59,4 +59,11 @@ ApplicationWindow {
         height:parent.height
         source: "camera.qml"
     }
+    Loader{
+        active: dataModel.screen_index_qt == 7
+        
+        width:parent.width
+        height:parent.height
+        source: "stream_page.qml"
+    }
 }
