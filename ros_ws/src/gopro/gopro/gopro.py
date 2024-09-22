@@ -35,7 +35,7 @@ class MyNode(Node):
     async def footage_transfer(self):
         st=await self.gopro.http_command.get_last_captured_media()
         vid=await self.gopro.http_command.download_file(camera_file=f"{st.data}",local_file="media.mp4")
-        subprocess.run(f"sshpass -p {SERVER_PASSWORD} scp media.mp4 {SERVER_USER}@{SERVER_USER}:~/",shell=True)
+        subprocess.run(f"sshpass -p {SERVER_PASSWORD} scp media.mp4 {SERVER_USER}@{SERVER_IP}:~/",shell=True)
         
     def start_recording_callback(self,request,response):
         self.get_logger().info("Starting Recording")
